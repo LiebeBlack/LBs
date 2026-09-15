@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <span class="logo" aria-hidden="true"></span>
+    <h1>Pure Black Neon</h1>
+    <label class="switch" title="Activar o desactivar globalmente">
+      <input type="checkbox" id="enabled" />
+      <span class="slider"></span>
+    </label>
+  </header>
+
+  <main>
+    <section>
+      <h2>Modo de fuerza</h2>
+      <div class="segmented" id="mode" role="radiogroup" aria-label="Modo de fuerza">
+        <button data-value="auto">Auto</button>
+        <button data-value="on">Base</button>
+        <button data-value="force">Forzado</button>
+        <button data-value="turbo">Turbo</button>
+      </div>
+      <p class="hint">Auto detecta sitios ya oscuros y no los toca. Forzado aplasta componentes; Turbo neutraliza filtros y blur.</p>
+    </section>
+
+    <section>
+      <h2>Acento</h2>
+      <div class="segmented" id="accent" role="radiogroup" aria-label="Acento">
+        <button data-value="multi">Multicolor</button>
+        <button data-value="green">Verde</button>
+        <button data-value="cyan">Cian</button>
+        <button data-value="magenta">Magenta</button>
+      </div>
+    </section>
+
+    <section class="extras">
+      <h2>Extras</h2>
+      <label><input type="checkbox" id="kill-anim" /> Congelar animaciones y parpadeos</label>
+      <label><input type="checkbox" id="dim-media" /> Atenuar imágenes y videos</label>
+    </section>
+
+    <footer>
+      <button id="exclude" class="ghost">Excluir este sitio</button>
+      <span id="host"></span>
+    </footer>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

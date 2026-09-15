@@ -1,0 +1,68 @@
+name: Package Pure Black Neon
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  lint-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install web-ext
+        run: npm install -g web-ext@8
+
+      - name: Lint (web-ext)
+        continue-on-error: true
+        run: web-ext lint --source-dir . --output json --output-file web-ext-lint.json || true
+
+      - name: Show lint summary
+        if: always()
+        run: |
+          if [ -f web-ext-lint.json ]; then
+            node -e "const r=require('./web-ext-lint.json');const t=(r.errors||[]).length,w=(r.warnings||[]).length;console.log('web-ext lint: '+t+' errores, '+w+' avisos');"
+          else
+            echo 'sin informe de lint'
+          fi
+
+      - name: Package .xpi
+        run: web-ext build --source-dir . --artifacts-dir dist --overwrite-dest
+
+      - name: Upload artifact (.xpi)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pure-black-neon-xpi
+          path: dist/*.xpi
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: lint-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download xpi
+        uses: actions/download-artifact@v4
+        with:
+          name: pure-black-neon-xpi
+          path: dist
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.xpi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

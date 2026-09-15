@@ -1,0 +1,10 @@
+# Artefactos de empaquetado
+dist/
+*.xpi
+*.zip
+web-ext-lint.json
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db

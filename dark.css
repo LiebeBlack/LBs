@@ -1,0 +1,179 @@
+/* ============================================================
+   Pure Black Neon v2.1 — dark.css
+   Negro puro #000000 + acentos neón. Sin librerías, MV3 Firefox.
+   Todo depende de html[data-pbn]: sin atributo, cero impacto.
+   Orden: vars → agresivo (force/turbo) → base → pulido.
+   ============================================================ */
+
+/* ---------- 1. Variables (modo = data-pbn, acento = data-pbn-accent) ---------- */
+html[data-pbn] {
+  --pbn-accent:  #00ff9c;   /* verde neón  */
+  --pbn-accent2: #00e5ff;   /* cian neón   */
+  --pbn-accent3: #ff2bd6;   /* magenta neón */
+  --pbn-fg:      #c9d1d9;   /* texto base (AA sobre #000) */
+  --pbn-fg-dim:  #8b949e;   /* texto secundario */
+  --pbn-fg-hi:   #f0f6fc;   /* texto enfatizado */
+  --pbn-line:    #30363d;   /* bordes */
+  --pbn-input:   #0d1117;   /* fondo de inputs */
+  color-scheme: dark;
+}
+html[data-pbn-accent="green"]   { --pbn-accent: #00ff9c; --pbn-accent2: #00ff9c; --pbn-accent3: #00ff9c; }
+html[data-pbn-accent="cyan"]    { --pbn-accent: #00e5ff; --pbn-accent2: #00e5ff; --pbn-accent3: #00e5ff; }
+html[data-pbn-accent="magenta"] { --pbn-accent: #ff2bd6; --pbn-accent2: #ff2bd6; --pbn-accent3: #ff2bd6; }
+
+/* ---------- 2. MODO FORZADO: aplasta fondos de CUALQUIER elemento ---------- */
+/* Excluye solo media real. La lista de selectores debe ser 100 % válida:
+   un selector roto invalidaría la regla completa. */
+html[data-pbn="force"] body,
+html[data-pbn="force"] :not(img):not(video):not(iframe):not(canvas):not(svg):not(picture):not(source):not(embed):not(object):not(track):not(audio):not(input):not(textarea):not(select):not(button):not(option):not(progress):not(meter) {
+  background-color: #000000 !important;
+  background-image: none !important;
+  border-color: var(--pbn-line) !important;
+}
+html[data-pbn="force"] *:not(svg):not(img) {
+  text-shadow: none !important;
+}
+
+/* Texto con gradiente (background-clip:text + fill transparente) se volvería
+   invisible sobre negro: rellenamos con el color computado en los modos
+   agresivos. El modo Base nunca hace esto. */
+html[data-pbn="force"] *, html[data-pbn="turbo"] * {
+  -webkit-text-fill-color: currentColor;
+}
+
+/* ---------- 3. MODO TURBO: neutraliza filtros/opacidades/blur trampa ---------- */
+html[data-pbn="turbo"] :not(img):not(video):not(canvas):not(iframe):not(svg):not(picture):not(source):not(embed):not(object):not(track):not(audio) {
+  filter: none !important;
+  backdrop-filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+/* ---------- 4. BASE: negro puro en el árbol estructural ---------- */
+html[data-pbn] body,
+html[data-pbn] div, html[data-pbn] section, html[data-pbn] article,
+html[data-pbn] aside, html[data-pbn] nav, html[data-pbn] header,
+html[data-pbn] footer, html[data-pbn] main, html[data-pbn] form,
+html[data-pbn] fieldset, html[data-pbn] legend, html[data-pbn] label,
+html[data-pbn] ul, html[data-pbn] ol, html[data-pbn] li,
+html[data-pbn] dl, html[data-pbn] dt, html[data-pbn] dd,
+html[data-pbn] table, html[data-pbn] thead, html[data-pbn] tbody,
+html[data-pbn] tfoot, html[data-pbn] tr, html[data-pbn] td, html[data-pbn] th,
+html[data-pbn] figure, html[data-pbn] figcaption, html[data-pbn] blockquote,
+html[data-pbn] address, html[data-pbn] details, html[data-pbn] summary,
+html[data-pbn] dialog, html[data-pbn] menu, html[data-pbn] span, html[data-pbn] p {
+  background-color: #000000 !important;
+  background-image: none !important;
+  color: var(--pbn-fg) !important;
+  border-color: var(--pbn-line) !important;
+}
+
+/* Diálogos y popovers: capa superior (top layer) también negra */
+html[data-pbn] dialog::backdrop,
+html[data-pbn] dialog[open]::backdrop,
+html[data-pbn] [popover]::backdrop {
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(2px) !important;
+}
+
+html[data-pbn] {
+  background-color: #000000 !important;
+  scrollbar-color: var(--pbn-accent) #0a0a0a;
+}
+
+/* ---------- 5. Pulido: se aplica en los 3 modos (gana por orden) ---------- */
+
+html[data-pbn] input, html[data-pbn] textarea,
+html[data-pbn] select, html[data-pbn] button,
+html[data-pbn] optgroup, html[data-pbn] progress, html[data-pbn] meter {
+  background-color: var(--pbn-input) !important;
+  color: var(--pbn-fg) !important;
+  border-color: var(--pbn-line) !important;
+}
+html[data-pbn] ::placeholder { color: var(--pbn-fg-dim) !important; opacity: 1 !important; }
+
+/* Autofill del navegador: neutraliza el destello blanco de Firefox/Chrome */
+html[data-pbn] input:autofill,
+html[data-pbn] input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--pbn-input) inset;
+  box-shadow: 0 0 0 1000px var(--pbn-input) inset;
+  -webkit-text-fill-color: var(--pbn-fg);
+  caret-color: var(--pbn-fg);
+}
+
+html[data-pbn] h1, html[data-pbn] h2, html[data-pbn] h3,
+html[data-pbn] h4, html[data-pbn] h5, html[data-pbn] h6,
+html[data-pbn] strong, html[data-pbn] b, html[data-pbn] th {
+  color: var(--pbn-fg-hi) !important;
+}
+html[data-pbn] small, html[data-pbn] caption,
+html[data-pbn] figcaption, html[data-pbn] time {
+  color: var(--pbn-fg-dim) !important;
+}
+
+/* Enlaces: cian; visitados: lavanda-magenta; hover: casi blanco */
+html[data-pbn] a         { color: var(--pbn-accent2) !important; }
+html[data-pbn] a:visited { color: color-mix(in srgb, var(--pbn-accent3) 55%, #c9c9ff) !important; }
+html[data-pbn] a:hover   { color: var(--pbn-fg-hi) !important; text-decoration-color: var(--pbn-accent2); }
+
+html[data-pbn] ::selection { background: var(--pbn-accent3) !important; color: #000000 !important; }
+
+/* Focus: borde + glow verde (tras el kill de sombras de Force, por orden) */
+html[data-pbn] :focus-visible {
+  outline: 2px solid var(--pbn-accent) !important;
+  outline-offset: 1px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--pbn-accent) 60%, transparent) !important;
+}
+
+html[data-pbn] progress::-moz-progress-bar { background: var(--pbn-accent) !important; }
+html[data-pbn] meter::-moz-meter-bar       { background: var(--pbn-accent) !important; }
+
+/* Controles nativos (checkbox, radio, range): acento neón */
+html[data-pbn] input[type="checkbox"],
+html[data-pbn] input[type="radio"],
+html[data-pbn] input[type="range"] {
+  accent-color: var(--pbn-accent);
+}
+
+/* ---------- 6. Marcas del análisis inteligente (content.js) ---------- */
+html[data-pbn] [data-pbn-fix] { color: var(--pbn-fg-hi) !important; }         /* texto invisible */
+html[data-pbn] [data-pbn-bg]  { background-color: #000000 !important;         /* bloque claro inline */
+  background-image: none !important; }
+
+/* ---------- 7. Media SIEMPRE protegido (es contenido, no interfaz) ---------- */
+html[data-pbn] img, html[data-pbn] video, html[data-pbn] iframe,
+html[data-pbn] canvas, html[data-pbn] picture, html[data-pbn] source,
+html[data-pbn] embed, html[data-pbn] object, html[data-pbn] audio {
+  filter: none !important;
+}
+
+/* Anti-flash: los iframes muestran un lienzo blanco hasta que carga su
+   contenido. Sin !important a propósito: si el sitio pinta su propio fondo,
+   gana el sitio (no podemos llegar dentro de todos modos). */
+html[data-pbn] iframe, html[data-pbn] frame, html[data-pbn] embed, html[data-pbn] object {
+  background-color: #000000;
+}
+html[data-pbn-dimmedia] img, html[data-pbn-dimmedia] video,
+html[data-pbn-dimmedia] picture {
+  filter: brightness(.82) contrast(1.05) !important;
+}
+
+/* ---------- 8. Extras opcionales ---------- */
+html[data-pbn-killanim] *, html[data-pbn-killanim] *::before, html[data-pbn-killanim] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-pbn] * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------- 9. Impresión: nunca salir en negro ---------- */
+@media print {
+  html[data-pbn], html[data-pbn] * {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
