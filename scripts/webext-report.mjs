@@ -48,14 +48,13 @@ function aInforme(texto) {
 }
 
 function leerInforme(archivo) {
-  let texto;
   try {
-    texto = readFileSync(archivo, 'utf8');
+    const texto = readFileSync(archivo, 'utf8');
+    if (texto.trim() === '') return { estado: 'ausente' };
+    return aInforme(texto) ?? { estado: 'ilegible' };
   } catch {
     return { estado: 'ausente' };
   }
-  if (texto.trim() === '') return { estado: 'ausente' };
-  return aInforme(texto) ?? { estado: 'ilegible' };
 }
 
 const informe = leerInforme(ruta);

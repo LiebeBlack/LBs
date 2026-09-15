@@ -41,10 +41,10 @@ jobs:
         run: npm run build
 
       - name: Lint de la extensión (web-ext)
-        # `--silent` evita que npm escriba su banner dentro del archivo: el
-        # informe tiene que ser JSON puro.
+        # Se llama a web-ext directamente (sin `npm run`) para que nada escriba
+        # su banner dentro del archivo: el informe tiene que ser JSON puro.
         continue-on-error: true
-        run: npm --silent run lint:addons > web-ext-lint.json
+        run: npx web-ext lint --source-dir build --output json --no-input > web-ext-lint.json
 
       - name: Resumen del lint
         if: always()
@@ -84,27 +84,13 @@ jobs:
             echo "|---|---|"
             echo "| **Versión** | ${{ steps.meta.outputs.version }} |"
             echo "| **Paquete** | ${{ steps.meta.outputs.zip_name }} |"
-            if [ -f web-ext-lint.json ]; then
-              node -e "const r=require('./web-ext-lint.json');const t=(r.errors||[]).length,w=(r.warnings||[]).length;console.log('| **web-ext lint** | '+t+' errores, '+w+' avisos |')"
-              node -e "
-                const r=require('./web-ext-lint.json');
-                const items=[...(r.errors||[]),...(r.warnings||[])];
-                if(items.length){
-                  console.log('');
-                  console.log('### Detalle del lint');
-                  console.log('');
-                  for(const it of items){
-                    const sev=(it._code&&String(it._code).startsWith('SYNTAX'))?'error':'aviso';
-                    console.log('- ['+sev+'] '+(it.code||'?')+' — '+(it.message||''));
-                    if(it.file) console.log('  - archivo: \\`'+it.file+'\\`');
-                  }
-                }"
-            else
-              echo "| **web-ext lint** | sin informe |"
-            fi
+            node scripts/webext-report.mjs --row
             echo ""
             echo "El .xpi del artifact **pure-black-neon-xpi** sale del directorio \`build/\` generado por esbuild."
           } >> "$GITHUB_STEP_SUMMARY"
+          # El detalle va fuera de la tabla; el script tolera que el informe no
+          # exista o llegue con basura delante del JSON.
+          node scripts/webext-report.mjs --detail >> "$GITHUB_STEP_SUMMARY"
 
   release:
     if: startsWith(github.ref, 'refs/tags/')

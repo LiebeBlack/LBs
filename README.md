@@ -165,10 +165,12 @@ existen en `build/`, así que una ruta rota se detecta sin abrir el navegador.
 ## Desarrollo
 
 ```bash
-npm run watch       # rebuild incremental de build/
-npm run lint        # ESLint (flat config)
-npm run lint:addons # web-ext lint sobre build/
-npm run clean       # borra build/
+npm run watch            # rebuild incremental de build/
+npm run lint             # ESLint (flat config)
+npm run lint:addons      # web-ext lint sobre build/
+npm run lint:addons:json # web-ext lint → web-ext-lint.json (informe legible por máquina)
+npm run lint:report      # resume ese informe (y dice si falta o está corrupto)
+npm run clean            # borra build/
 ```
 
 `build/` y `dist/` están en `.gitignore`: nunca se commitean artefactos.
