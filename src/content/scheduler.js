@@ -127,18 +127,6 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
     stop,
     resume,
     refill,
-    get spent() {
-      return gastado;
-    },
-    get pending() {
-      return cola.length + (enCurso ? 1 : 0);
-    },
-    get steps() {
-      return hechoTotal;
-    },
-    get exhausted() {
-      return gastado >= totalMs && refills >= refillsMax;
-    },
     stats() {
       return {
         spentMs: Math.round(gastado * 100) / 100,

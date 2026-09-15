@@ -95,13 +95,6 @@ export function createAutoDetector() {
 
   return {
     measure,
-    isDark: () => resultado === 'dark',
-    get decision() {
-      return resultado;
-    },
-    get calls() {
-      return llamadas;
-    },
     reset() {
       resultado = null;
       llamadas = 0;

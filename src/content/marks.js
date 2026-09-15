@@ -28,17 +28,6 @@ export const MARK = Object.freeze({
   SHADOW: 'data-pbn-shadow' // host con shadow root creado tarde
 });
 
-/** Atributos que gobiernan el motor desde <html>. */
-export const ROOT_ATTRS = Object.freeze([
-  MARK.OFF,
-  MARK.ENGINE,
-  MARK.STRICT,
-  MARK.MEASURING,
-  MARK.KILLANIM,
-  MARK.DIMMEDIA,
-  MARK.ACCENT
-]);
-
 /** Atributos de corrección: se borran juntos al cambiar de motor o apagar. */
 export const CORRECTION_ATTRS = Object.freeze([
   MARK.MEDIA,
@@ -102,11 +91,3 @@ export function resetCorrections(root) {
   return borradas;
 }
 
-/** Deja <html> limpio de estado del motor conservando la exclusión. */
-export function clearRootState(root) {
-  if (!root) return;
-  for (const attr of ROOT_ATTRS) {
-    if (attr === MARK.OFF) continue;
-    root.removeAttribute(attr);
-  }
-}
