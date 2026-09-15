@@ -106,6 +106,7 @@ async function principal() {
 
   if (args.has('--watch')) {
     const contexto = await esbuild.context(opcionesEsbuild);
+    await contexto.rebuild(); // primer build explícito: la validación no depende del orden de watch()
     await contexto.watch();
     const total = await verificarSalida();
     console.log(`PBN: observando cambios · ${total} referencias del manifest verificadas en build/`);

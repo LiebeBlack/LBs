@@ -1,9 +1,12 @@
 /* ============================================================================
    Pure Black Neon v2.6 — MOTOR DE INVERSIÓN (invert.css)     CAPA 1A
    ----------------------------------------------------------------------------
-   Contrato: solo se aplica con html[data-pbn-engine="invert"]:not([data-pbn-off]).
-   Se inyecta en document_start desde el manifest, así que el primer pintado ya
-   es oscuro: cero destello blanco sin depender de ninguna lectura asíncrona.
+   Contrato: el motor viene ENCENDIDO ya en el CSS. El JS solo escribe
+   anulaciones (sitio excluido, extensión desactivada, sitio que ya es oscuro) o
+   el cambio al motor AMOLED. Como la hoja se inyecta en document_start desde el
+   manifest, el primer pintado ya es oscuro incluso si el JS tardara o no
+   llegara a ejecutarse: cero destello blanco por construcción, no por carrera
+   con storage.
 
    Matemática de la cancelación (importante, no cambiar el orden):
      · El filtro del documento es   F = H ∘ I   (`invert(100%) hue-rotate(180deg)`
@@ -25,7 +28,7 @@
    Effects exime al elemento raíz de crear containing block para descendientes
    position:fixed, así que las cabeceras fijas y sticky siguen funcionando.
    --------------------------------------------------------------------------- */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) {
   filter: invert(100%) hue-rotate(180deg) !important;
   color-scheme: light !important; /* los widgets UA claros se vuelven oscuros al invertir */
   scrollbar-width: thin;
@@ -40,7 +43,7 @@ html[data-pbn-engine="invert"]:not([data-pbn-off]) {
    Blanco pre-inversión → #000000 exacto en pantalla (los neutros son
    invariantes bajo hue-rotate(180deg)).
    --------------------------------------------------------------------------- */
-html[data-pbn-engine="invert"]:not([data-pbn-off])::before {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"])::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -54,7 +57,7 @@ html[data-pbn-engine="invert"]:not([data-pbn-off])::before {
    [data-pbn-media] lo escribe la Capa 2 cuando descubre un fondo con foto
    (background-image) que sin rescate quedaría en negativo.
    --------------------------------------------------------------------------- */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) :is(
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(
     img,
     picture,
     video,
@@ -70,7 +73,7 @@ html[data-pbn-engine="invert"]:not([data-pbn-off]) :is(
 
 /* Dentro de un bloque ya re-invertido no se re-invierte nada más: la suma de
    dos cadenas G se cancelaría entre sí y la imagen volvería al negativo. */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-media] :is(
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) [data-pbn-media] :is(
     img,
     picture,
     video,
@@ -92,7 +95,7 @@ html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-media] :is(
    decidiría mal. La suspensión dura milisegundos y nunca afecta al filtro ni
    al lienzo: durante la ventana el sitio sigue viéndose oscuro.
    --------------------------------------------------------------------------- */
-html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pbn-measuring]) :is(
+html[data-pbn-strict]:not([data-pbn-off]):not([data-pbn-engine="amoled"]):not([data-pbn-measuring]) :is(
     main,
     [role="main"],
     article,
@@ -135,8 +138,8 @@ html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pb
 }
 /* html/body: el fondo sí se aplana, pero la imagen de fondo se elimina porque
    no se puede re-invertir sin cancelar la inversión de todo el subárbol. */
-html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pbn-measuring]),
-html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pbn-measuring]) > body {
+html[data-pbn-strict]:not([data-pbn-off]):not([data-pbn-engine="amoled"]):not([data-pbn-measuring]),
+html[data-pbn-strict]:not([data-pbn-off]):not([data-pbn-engine="amoled"]):not([data-pbn-measuring]) > body {
   background-color: #ffffff !important;
   background-image: none !important;
 }
@@ -147,19 +150,19 @@ html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pb
 
 /* Filtros del propio sitio que alteran luminancia (invert, brightness, sepia…):
    invertidos darían artefactos de color. Ver patch de la Capa 2. */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-filterreset] {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) [data-pbn-filterreset] {
   filter: none !important;
 }
 
 /* mix-blend-mode depende de la luminancia del fondo: al invertir el resultado
    se da la vuelta (multiply → screen). */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-blend] {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) [data-pbn-blend] {
   mix-blend-mode: normal !important;
 }
 
 /* backdrop-filter (glassmorphism): el desenfoque del fondo invertido queda
    turbio y sucio. */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-backdrop] {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) [data-pbn-backdrop] {
   backdrop-filter: none !important;
 }
 
@@ -170,7 +173,7 @@ html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-backdrop] {
    alcanzable por el pipeline invert+hue-rotate; el neón literal está en el
    motor AMOLED, donde no hay inversión.
    --------------------------------------------------------------------------- */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) {
   --pbn-pre-green: #006b45;   /* en pantalla ≈ menta  */
   --pbn-pre-cyan: #00596b;    /* en pantalla ≈ cian   */
   --pbn-pre-magenta: #730061; /* en pantalla ≈ rosa   */
@@ -180,32 +183,32 @@ html[data-pbn-engine="invert"]:not([data-pbn-off]) {
   caret-color: var(--pbn-pre-accent2);
 }
 
-html[data-pbn-engine="invert"]:not([data-pbn-off])[data-pbn-accent="green"] {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"])[data-pbn-accent="green"] {
   --pbn-pre-accent: var(--pbn-pre-green);
   --pbn-pre-accent2: var(--pbn-pre-green);
   --pbn-pre-accent3: var(--pbn-pre-green);
 }
-html[data-pbn-engine="invert"]:not([data-pbn-off])[data-pbn-accent="cyan"] {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"])[data-pbn-accent="cyan"] {
   --pbn-pre-accent: var(--pbn-pre-cyan);
   --pbn-pre-accent2: var(--pbn-pre-cyan);
   --pbn-pre-accent3: var(--pbn-pre-cyan);
 }
-html[data-pbn-engine="invert"]:not([data-pbn-off])[data-pbn-accent="magenta"] {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"])[data-pbn-accent="magenta"] {
   --pbn-pre-accent: var(--pbn-pre-magenta);
   --pbn-pre-accent2: var(--pbn-pre-magenta);
   --pbn-pre-accent3: var(--pbn-pre-magenta);
 }
 
-html[data-pbn-engine="invert"]:not([data-pbn-off]) ::selection {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) ::selection {
   background: var(--pbn-pre-accent) !important;
   color: #ffffff !important;
 }
-html[data-pbn-engine="invert"]:not([data-pbn-off]) :focus-visible {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :focus-visible {
   outline: 2px solid var(--pbn-pre-accent2) !important;
   outline-offset: 1px;
 }
 /* Controles nativos: el acento se invierte igual que el resto de la página. */
-html[data-pbn-engine="invert"]:not([data-pbn-off]) :is(
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(
     input[type="checkbox"],
     input[type="radio"],
     input[type="range"]
@@ -219,17 +222,17 @@ html[data-pbn-engine="invert"]:not([data-pbn-off]) :is(
    cadena de re-inversión para que el resultado neto sea exactamente
    contrast/brightness sobre la imagen original.
    --------------------------------------------------------------------------- */
-html[data-pbn-engine="invert"][data-pbn-dimmedia]:not([data-pbn-off]) :is(img, video, picture) {
+html[data-pbn-dimmedia]:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(img, video, picture) {
   filter: brightness(0.82) contrast(1.05) hue-rotate(180deg) invert(100%) !important;
 }
-html[data-pbn-engine="invert"][data-pbn-killanim]:not([data-pbn-off]) *,
-html[data-pbn-engine="invert"][data-pbn-killanim]:not([data-pbn-off]) *::before,
-html[data-pbn-engine="invert"][data-pbn-killanim]:not([data-pbn-off]) *::after {
+html[data-pbn-killanim]:not([data-pbn-off]):not([data-pbn-engine="amoled"]) *,
+html[data-pbn-killanim]:not([data-pbn-off]):not([data-pbn-engine="amoled"]) *::before,
+html[data-pbn-killanim]:not([data-pbn-off]):not([data-pbn-engine="amoled"]) *::after {
   animation: none !important;
   transition: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-pbn-engine="invert"]:not([data-pbn-off]) * {
+  html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
@@ -241,27 +244,27 @@ html[data-pbn-engine="invert"][data-pbn-killanim]:not([data-pbn-off]) *::after {
 
 /* Impresión: nunca en negativo. */
 @media print {
-  html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+  html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) {
     filter: none !important;
     background-color: #ffffff !important;
   }
-  html[data-pbn-engine="invert"]:not([data-pbn-off]) * {
+  html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) * {
     background-color: #ffffff !important;
     background-image: none !important;
     color: #000000 !important;
     box-shadow: none !important;
   }
-  html[data-pbn-engine="invert"]:not([data-pbn-off])::before {
+  html:not([data-pbn-off]):not([data-pbn-engine="amoled"])::before {
     display: none !important;
   }
 }
 
 /* Alto contraste del sistema: la accesibilidad manda sobre el tema. */
 @media (forced-colors: active) {
-  html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+  html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) {
     filter: none !important;
   }
-  html[data-pbn-engine="invert"]:not([data-pbn-off])::before {
+  html:not([data-pbn-off]):not([data-pbn-engine="amoled"])::before {
     display: none !important;
   }
 }
