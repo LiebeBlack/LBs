@@ -28,7 +28,8 @@ function esMensaje(valido) {
 export async function sendToBackground(mensaje) {
   if (!esMensaje(mensaje)) return undefined;
   try {
-    return await browser.runtime.sendMessage(mensaje);
+    const respuesta = await browser.runtime.sendMessage(mensaje);
+    return respuesta;
   } catch (err) {
     return undefined;
   }
@@ -41,7 +42,8 @@ export async function sendToBackground(mensaje) {
 export async function sendToTab(tabId, mensaje, opciones) {
   if (tabId === undefined || tabId === null || !esMensaje(mensaje)) return undefined;
   try {
-    return await browser.tabs.sendMessage(tabId, mensaje, opciones);
+    const respuesta = await browser.tabs.sendMessage(tabId, mensaje, opciones);
+    return respuesta;
   } catch (err) {
     return undefined;
   }

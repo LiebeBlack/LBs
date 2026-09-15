@@ -50,8 +50,17 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
     idleId = programarIdle(() => {
       idleId = null;
       const inicio = performance.now();
+      // Los dos cortes (rebanada de 8 ms y presupuesto de 40 ms) son saltos
+      // explícitos: el reloj y `gastado` son estado del gobernador, no de la
+      // condición del bucle, y así el corte se lee tal cual ocurre.
+      let agotado = false;
       try {
-        while (performance.now() - inicio < sliceMs && gastado < totalMs) {
+        while (true) {
+          if (performance.now() - inicio >= sliceMs) break;
+          if (gastado >= totalMs) {
+            agotado = true;
+            break;
+          }
           if (!enCurso) {
             enCurso = cola.shift() ?? null;
             if (!enCurso) break;
@@ -67,7 +76,7 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
 
       gastado += performance.now() - inicio;
 
-      if (gastado >= totalMs) {
+      if (agotado || gastado >= totalMs) {
         warn(`presupuesto de corrección agotado (${Math.round(gastado)} ms): se deja de analizar esta página`);
         activo = false; // parada dura: se recupera con refill() tras volver de una pestaña oculta
         enCurso = null;

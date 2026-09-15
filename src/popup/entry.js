@@ -221,13 +221,20 @@ function conectarAcciones() {
 async function resolverPestana() {
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    tabId = tab?.id ?? null;
+    const id = tab?.id ?? null;
+
     // El host se pide al content script (fuente fiable y sin permisos de URL);
     // tab.url queda solo como respaldo si el marco no responde.
-    const respuesta = await sendToTab(tabId, { type: MSG.QUERY_HOST }, { frameId: 0 });
-    if (respuesta && typeof respuesta.host === 'string' && respuesta.host) host = respuesta.host;
-    else if (typeof tab?.url === 'string') host = new URL(tab.url).hostname || '';
-    tabOff = tabId === null ? false : await isTabOff(tabId);
+    const respuesta = id === null ? undefined : await sendToTab(id, { type: MSG.QUERY_HOST }, { frameId: 0 });
+    const hostDelMarco = respuesta && typeof respuesta.host === 'string' ? respuesta.host : '';
+    const hostDeUrl = typeof tab?.url === 'string' ? new URL(tab.url).hostname : '';
+    const fuera = id === null ? false : await isTabOff(id);
+
+    // Un solo punto de escritura, ya sin awaits por medio: el estado publicado
+    // no puede quedar a medias ni pisarse entre invocaciones solapadas.
+    tabId = id;
+    host = hostDelMarco || hostDeUrl || '';
+    tabOff = fuera;
   } catch (err) {
     error('no se pudo resolver la pestaña activa:', mensajeDeError(err));
     tabId = null;

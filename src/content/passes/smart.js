@@ -84,9 +84,10 @@ function* recorrer(root, ctx) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, { acceptNode: aceptarNodo });
   let bloquePreservado = null;
 
-  while (walker.nextNode()) {
-    const el = walker.currentNode;
-
+  // `for` con el avance en la cabecera (en lugar de `while (walker.nextNode())`):
+  // el movimiento del recorrido se ve sin leer el cuerpo, y `continue` sigue
+  // reanudando el avance igual que antes.
+  for (let el = walker.nextNode(); el !== null; el = walker.nextNode()) {
     ctx.presupuesto.visitados += 1;
     if (ctx.presupuesto.visitados > ctx.presupuesto.max) return;
 
