@@ -1,13 +1,16 @@
 /* ============================================================================
    Modo Auto: UNA medición, sin analizar el DOM.
 
-   Presupuesto duro: como máximo 2 llamadas a getComputedStyle por fase y 2
-   fases en toda la vida de la página (4 llamadas en total, ~microsegundos). No
-   hay recorridos de árbol, ni observers, ni re-sondeos en cascada.
+   Presupuesto duro: 3 llamadas a getComputedStyle en el caso peor (html, body
+   y primer contenedor) y ninguna más; el tope absoluto del objeto es 4, aunque
+   nunca se alcanza porque la lectura de <html> se reutiliza entre fases. No hay
+   recorridos de árbol, ni observers, ni re-sondeos en cascada.
 
-   Fase A (document_start): fondo real de <html>. Si es opaco ya decide.
+   Fase A (document_start): fondo real de <html> (y su color-scheme declarado).
+   Si es opaco ya decide. La lectura se guarda para no repetirla.
    Fase B (cuando existe <body>): si <html> era transparente, se compone el
-   fondo de <body> sobre el lienzo y se decide con datos reales.
+   fondo de <body> y, si también es transparente, el del primer contenedor
+   (#app), que es donde las SPA oscuras pintan el fondo de verdad.
 
    Se mide el color REAL del sitio: por eso el motor de inversión no fuerza el
    fondo de html/body (el lienzo negro lo garantiza un respaldo ::before que no
@@ -28,6 +31,7 @@ export function createAutoDetector() {
   let resultado = null; // null = indeciso ('dark' | 'light')
   let llamadas = 0;
   let contextoLiberado = false;
+  let lecturaHtml = null; // se guarda de la fase A para no repetir la medición
 
   function leerFondo(elemento) {
     if (!elemento || llamadas >= MAX_LLAMADAS) return null;
@@ -62,7 +66,8 @@ export function createAutoDetector() {
     if (resultado !== null) return resultado;
     if (typeof document === 'undefined' || !document.documentElement) return null;
 
-    const html = leerFondo(document.documentElement);
+    if (lecturaHtml === null) lecturaHtml = leerFondo(document.documentElement);
+    const html = lecturaHtml;
     if (!html || !html.color) return null; // documento no medible: el motor sigue activo
 
     const alfaHtml = html.color.a;
@@ -81,14 +86,22 @@ export function createAutoDetector() {
     // <html> transparente: hace falta <body> para decidir con datos reales.
     const body = leerFondo(document.body);
     if (!body) return null;
-    if (!body.color) {
-      // Sin fondo propio: manda el lienzo (blanco, o oscuro si lo declara).
-      return cerrar(html.declaraOscuro ? 'dark' : 'light');
-    }
 
-    const luminancia = alfaHtml > 0.05
-      ? body.color.a * luminance(body.color) + (1 - body.color.a) * lumHtml
-      : luminanceOverWhite(body.color);
+    const lienzo = html.declaraOscuro ? 0 : 1;
+    let luminancia;
+    if (!body.color || body.color.a <= 0.05) {
+      // El patrón más común de las SPA oscuras: html y body transparentes y el
+      // fondo real en el primer contenedor (#app). Una lectura más y se decide.
+      const wrapper = leerFondo(document.body.firstElementChild);
+      if (!wrapper || !wrapper.color || wrapper.color.a <= 0.05) {
+        return cerrar(html.declaraOscuro ? 'dark' : 'light');
+      }
+      luminancia = wrapper.color.a * luminance(wrapper.color) + (1 - wrapper.color.a) * lienzo;
+    } else {
+      luminancia = alfaHtml > 0.05
+        ? body.color.a * luminance(body.color) + (1 - body.color.a) * lumHtml
+        : luminanceOverWhite(body.color);
+    }
 
     return cerrar(luminancia <= UMBRAL_OSCURO ? 'dark' : 'light');
   }
@@ -98,6 +111,7 @@ export function createAutoDetector() {
     reset() {
       resultado = null;
       llamadas = 0;
+      lecturaHtml = null;
     }
   };
 }

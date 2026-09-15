@@ -31,10 +31,11 @@ emergencia.
 
 ### Capa 0 — cero destellos blancos
 
-El CSS se inyecta desde el manifest en `document_start`, y el motor está activo
-**por defecto en CSS**: no depende de ninguna lectura asíncrona. El JS solo
-escribe *anulaciones* (`data-pbn-off`) cuando la extensión está desactivada, el
-sitio está excluido o Auto detecta un sitio ya oscuro.
+El CSS se inyecta desde el manifest en `document_start` y **el motor viene
+encendido ya en el CSS**: no depende de ninguna lectura asíncrona, ni siquiera de
+que el JS llegue a ejecutarse. El JS solo escribe *anulaciones* (`data-pbn-off`)
+cuando la extensión está desactivada, el sitio está excluido o Auto detecta un
+sitio ya oscuro.
 
 Prohibiciones deliberadas: nunca `visibility:hidden` transitorios, nunca
 `filter` en `<body>` (solo en `<html>`, que la especificación de Filter Effects
@@ -47,11 +48,14 @@ lectura de layout en el arranque.
 **Inversión** (`src/engines/invert.css`):
 
 ```css
-html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+/* ENCENDIDO por defecto: el JS solo escribe anulaciones o cambia de motor */
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) {
   filter: invert(100%) hue-rotate(180deg) !important;   /* 1 sola capa de composición */
 }
 /* re-inversión con ORDEN INVERTIDO: cancelación exacta */
-html[...] :is(img, video, canvas, iframe, embed, object, picture, [data-pbn-media]) {
+html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(
+  img, video, canvas, iframe, embed, object, picture, [data-pbn-media]
+) {
   filter: hue-rotate(180deg) invert(100%) !important;
 }
 ```
@@ -110,8 +114,10 @@ llamada a `getComputedStyle` por nodo, con `checkVisibility()`) → lote de
 mutaciones para contenido dinámico. Cada nodo cede el control, así que el corte
 por tiempo es real y el trabajo se reanuda en el siguiente hueco de inactividad.
 
-El modo Auto **mide una sola vez** (como máximo 2 lecturas de estilo en 2 fases,
-4 en total contando la confirmación) y nunca recorre el DOM.
+El modo Auto **mide sin recorrer el DOM**: fondo de `html`, de `body` y, si los
+dos son transparentes, del primer contenedor (`#app`), que es donde las SPA
+oscuras pintan el fondo de verdad. Como mucho 3 lecturas de estilo en 2 fases
+(el techo duro es 4) y ninguna si el motor está en modo `Siempre`.
 
 ### Capa 3 — matriz de fallos de color
 
