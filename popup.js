@@ -1,5 +1,5 @@
 /* ============================================================
-   Pure Black Neon v2.2 — popup.js
+   Pure Black Neon v2.5 — popup.js
    Carga/guarda ajustes en storage.sync; los content scripts
    reaccionan solos vía storage.onChanged (sin mensajes extra).
    ============================================================ */

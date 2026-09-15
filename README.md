@@ -1,4 +1,4 @@
-# Pure Black Neon v2.2
+# Pure Black Neon v2.5
 
 Modo oscuro **puro (#000000)** con acentos neón para **cualquier sitio web** en Firefox.
 Sin librerías, sin telemetría, sin errores de renderizado.
@@ -9,10 +9,12 @@ Sin librerías, sin telemetría, sin errores de renderizado.
 ## Características
 
 - **Negro puro #000000** en todo el árbol del DOM, con texto gris legible (contraste AA).
-- **Modo Auto (por defecto)**: mide la luminancia real del fondo del sitio; si ya es oscuro no lo toca (cero atributos, cero coste), si es claro actúa en Forzado.
+- **Modo Auto (por defecto)**: mide la luminancia real del fondo del sitio; si ya es oscuro no lo toca (cero atributos, cero coste), si es claro actúa en Forzado. Si el sitio declara oscuro pero pinta un bloque claro con JavaScript, el sondeo mira los primeros hijos de `<body>` y decide con datos reales.
+- **Las imágenes, videos, canvas e iframe nunca se alteran**: el motor solo toca la interfaz. Única excepción opcional: el ajuste «Atenuar imágenes y videos» del popup.
 - **4 niveles de fuerza**: Auto, Base, Forzado (aplasta componentes con fondos complejos, rellena texto con gradiente que sería invisible) y Turbo (neutraliza además filtros, opacidades y blur).
 - **Acentos neón** configurables: Multicolor (verde/cian/magenta), Verde, Cian o Magenta.
-- **Análisis inteligente de estilos inline**: detecta texto invisible y bloques claros mediante luminancia WCAG, sin mutar el CSS del sitio.
+- **Análisis inteligente de estilos inline**: detecta texto invisible, bloques claros (fondos y gradientes), `-webkit-text-fill-color` oscuro e iconos SVG que quedarían negros, mediante luminancia WCAG, sin mutar el CSS del sitio.
+- **Pase profundo con estilos computados**: rescata el texto gris que los sitios fijan por clases CSS (invisible sobre el negro), distinguiendo grises neutros de colores cromáticos de marca y sin tocar media ni bloques claros rescatados.
 - **Shadow DOM abierto**: se viste automáticamente; hook MAIN-world de `attachShadow` vía `contentScripts.register` (inmune a CSP) con fallback inline.
 - **Manejo de contenido dinámico**: `MutationObserver` con debounce de 120 ms y presupuesto de 400 nodos por lote; se **pausa por completo** en pestañas ocultas (0 % CPU en segundo plano).
 - **Atajo de teclado**: `Ctrl+Shift+L` alterna el modo solo en la pestaña actual.

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Pure Black Neon",
-  "version": "2.2.0",
-  "description": "Modo oscuro puro (#000000) con acentos neón en cualquier sitio. Ultraligero, inteligente y agresivo con el diseño claro.",
+  "version": "2.5.0",
+  "description": "Modo oscuro puro (#000000) con acentos neón en cualquier sitio. Ultraligero, inteligente y agresivo con el diseño claro — sin tocar imágenes ni videos.",
   "author": "Pure Black Neon",
   "icons": {
     "48": "icon.svg",

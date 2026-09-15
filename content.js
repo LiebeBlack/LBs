@@ -1,11 +1,19 @@
 /* ============================================================
-   Pure Black Neon v2.2 — content.js
+   Pure Black Neon v2.5 — content.js
    Motor: sin librerías, sin fugas, sin errores.
    - Aplica el modo vía atributos en <html> (el CSS hace el trabajo)
    - MODO AUTO: mide la luminancia del fondo real del sitio; si ya
      es oscuro NO lo toca (cero atributos, cero coste). Si es claro,
-     actúa en modo Forzado.
-   - Análisis de luminancia en estilos inline (texto invisible)
+     actúa en modo Forzado. Si declara oscuro pero sus primeros hijos
+     pintan claro (fondo con JS), re-mide y decide con datos reales.
+   - Análisis inteligente de estilos inline, sin mutar los del sitio:
+       · texto invisible sobre negro      → [data-pbn-fix]
+       · fondo claro / gradiente inline   → [data-pbn-bg]
+       · icono SVG que heredaría fill:0   → [data-pbn-svgfix]
+   - Pase profundo con estilos computados: rescata el texto gris que
+     los sitios fijan por CLASES CSS (color gris sobre fondo blanco,
+     ahora invisible sobre nuestro negro). Sabe distinguir cromáticos
+     de neutros y no toca media ni contenedores claros rescatados.
    - Shadow DOM abierto + hook de attachShadow para raíces futuras
    - MutationObserver con debounce, presupuesto y pausa en oculto
    - Reacciona en vivo al popup vía storage.onChanged
@@ -33,6 +41,7 @@
   const shadowDone = new WeakSet();          // shadow roots ya vestidos
   let autoWaiter = false;                    // DCL armado para auto (una vez)
   let autoProbeTimer = null;                 // sonda diferida para fondos transparentes
+  let autoProbeCount = 0;                    // nº de re-sondeos AUTO ya armados
 
   /* ---------------- utilidades de color ---------------- */
 
@@ -98,10 +107,37 @@
     return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
   }
 
+  /* máxima desviación de canal respecto al gris: 0 = neutro, ~127 = muy cromático */
+  function chroma(c) {
+    return Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+  }
+
   /* ---------------- MODO AUTO: luminancia efectiva del sitio ----------------
    Recorre html→body→wrapper buscando el primer fondo real (opaco) y devuelve
    su luminancia compuesta. -1 = aún indeciso (sin body o todo transparente).
+   Si el sitio declara oscuro pero sus primeros hijos pintan un bloque claro
+   (fondos inyectados con JS), re-compone con el hijo real y decide con eso.
+   Con contenido vivo (vídeo/canvas/marquee) confía en la declaración del
+   sitio: oscurecer un reproductor en marcha sería peor remedio.
    -------------------------------------------------------------------------- */
+
+  const AUTO_PROBE_MAX = 40;                 // hijos de <body> sondeados como mucho
+  const AUTO_MIN_OPACITY = 0.15;             // debajo: invisible sobre el negro
+
+  function hasMeaningfulMotion() {
+    try {
+      let i = 0;
+      for (const el of document.body.querySelectorAll('video, canvas, marquee')) {
+        if (++i > 50) break;
+        if (el.tagName === 'VIDEO' || el.tagName === 'MARQUEE') return true;
+        if (el.tagName === 'CANVAS') {
+          const c = parseColor(getComputedStyle(el).backgroundColor);
+          if (c && c.a >= AUTO_MIN_OPACITY) return true;   // lienzo pintado y vivo
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
 
   function effectiveLum() {
     try {
@@ -117,6 +153,22 @@
         if (c.a >= 0.95) break;               // fondo opaco: decidido
       }
       if (!found) return -1;                  // todo transparente (averiguar luego)
+      if (acc >= AUTO_DARK_THRESHOLD) {
+        // El sitio declara oscuro pero podría pintarlo luego con JS:
+        // sondeamos los primeros hijos directos de <body>.
+        let i = 0;
+        for (const el of document.body.children) {
+          if (++i > AUTO_PROBE_MAX) break;
+          const c = parseColor(getComputedStyle(el).backgroundColor);
+          if (!c || c.a <= 0) continue;
+          const op = acc * (1 - c.a) + luminance(c) * c.a;   // efectivo sobre el fondo actual
+          if (op >= 0.25) {
+            if (hasMeaningfulMotion()) return acc;           // hay contenido vivo: confiar
+            acc = op;
+            break;
+          }
+        }
+      }
       return acc;
     } catch (_) {
       return -1;
@@ -125,9 +177,17 @@
 
   /* ---------------- análisis inteligente de estilos inline ----------------
    Detecta (sin mutar los estilos del sitio):
-     color con luminancia efectiva casi nula → [data-pbn-fix]  (texto invisible
-     sobre el negro que acabamos de imponer)
+     color con luminancia efectiva casi nula          → [data-pbn-fix]
+       (texto invisible sobre el negro que acabamos de imponer)
+     background claro u opaco (incl. gradientes)      → [data-pbn-bg]
+       (bloque claro inline que rompería el diseño; los que llevan
+       url() se respetan: es una imagen de fondo legítima)
+     -webkit-text-fill-color oscuro                   → [data-pbn-fix]
+       (texto degradado de sitios claros quedaría invisible)
    ------------------------------------------------------------------------ */
+
+  const RE_GRADIENT = /^\s*(linear|radial|conic)-gradient\s*\(/i;
+  const RE_URL = /\burl\s*\(/i;
 
   function analyzeElement(el) {
     if (scanned.has(el)) return;
@@ -135,28 +195,96 @@
     const styleAttr = el.getAttribute && el.getAttribute('style');
     if (!styleAttr) return;
 
+    let invisible = false;
+    let lightBlock = false;
     for (const decl of styleAttr.split(';')) {
       const i = decl.indexOf(':');
       if (i < 0) continue;
       const prop = decl.slice(0, i).trim().toLowerCase();
       const value = decl.slice(i + 1).trim();
-      if (prop !== 'color' || (!value.startsWith('#') && !value.includes('('))) continue;
+      if (!value || value.startsWith('var(')) continue;
 
-      const color = parseColor(value);
-      if (!color) continue;
-      const effective = color.a * luminance(color);   // composición sobre negro
-
-      if (effective < 0.09) {
-        el.setAttribute('data-pbn-fix', '');          // texto casi invisible
-        break;                                        // una marca basta
+      if (prop === 'color' || prop === '-webkit-text-fill-color') {
+        if (!value.startsWith('#') && !value.includes('(')) continue;
+        const color = parseColor(value);
+        if (!color) continue;
+        if (color.a * luminance(color) < 0.09) invisible = true;
+      } else if (prop === 'background' || prop === 'background-color') {
+        if (value === 'transparent' || RE_URL.test(value)) continue;
+        if (RE_GRADIENT.test(value)) { lightBlock = true; continue; }  // gradiente: asumir bloque
+        const bg = parseColor(value);
+        if (bg && bg.a >= 0.35 && luminance(bg) > 0.32) lightBlock = true;
       }
     }
+
+    if (invisible) el.setAttribute('data-pbn-fix', '');   // texto casi invisible
+    if (lightBlock) el.setAttribute('data-pbn-bg', '');   // fondo claro inline
+  }
+
+  /* ---------------- pase profundo: estilos computados ----------------
+   Los sitios serios ya no usan estilos inline: fijan el texto con CLASES
+   CSS (p. ej. .muted { color: #6a737d }) pensado para fondo blanco. Tras
+   imponer nuestro negro, ese texto queda invisible. Este pase lo detecta
+   con getComputedStyle y lo marca con [data-pbn-fix2], con criterio:
+     · solo texto realmente oscuro (lum. efectiva < 0.09)
+     · el sitio debe haber declarado color "propio" (no heredado ni default)
+     · colores cromáticos se respetan (marca de la web, no gris de texto)
+     · nunca dentro de media, code/pre/kbd, ni bloques claros rescatados
+     · presupuesto pequeño: sondeo fino, nunca un cuello de botella
+   -------------------------------------------------------------------- */
+
+  const DEEP_MAX = 600;                      // nodos sondeados por pase
+
+  function skipDeepNode(el) {
+    const tag = el.tagName;
+    if (tag === 'IMG' || tag === 'VIDEO' || tag === 'CANVAS' || tag === 'SVG' ||
+        tag === 'IFRAME' || tag === 'AUDIO' || tag === 'PICTURE' || tag === 'SOURCE' ||
+        tag === 'EMBED' || tag === 'OBJECT' || tag === 'TRACK' || tag === 'MAP') return true;
+    if (tag === 'PRE' || tag === 'CODE' || tag === 'KBD' || tag === 'SAMP' ||
+        tag === 'VAR' || tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' ||
+        tag === 'INPUT' || tag === 'SELECT' || tag === 'OPTION' || tag === 'TEMPLATE') return true;
+    return el.hasAttribute('data-pbn-bg');   // dentro de un bloque claro rescatado el gris sí es válido
+  }
+
+  function deepScan(root, budget) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+      acceptNode(node) {
+        if (skipDeepNode(node)) return NodeFilter.FILTER_REJECT;   // no bajar en media
+        if (node.childElementCount === 0 && (node.textContent || '').trim()) {
+          return NodeFilter.FILTER_ACCEPT;
+        }
+        return NodeFilter.FILTER_SKIP;
+      }
+    });
+    let count = 0;
+    while (walker.nextNode() && count < budget && count < DEEP_MAX) {
+      const el = walker.currentNode;
+      const cs = getComputedStyle(el);
+      const col = parseColor(cs.color);
+      if (!col || col.a <= 0) continue;
+      // Color efectivo sobre el fondo ya oscurecido: si es casi negro, es texto invisible.
+      if (col.a * luminance(col) >= 0.09) continue;
+      // Solo colores "propios": un color heredado/default lo corrige la cascada base.
+      if (!cs.getPropertyValue('--pbn-owner')) {
+        if (col.a >= 0.99 && chroma(col) < 10) continue;           // neutro opaco no declarado: es heredado
+      }
+      // Respetar intencionalidad: si declara color, lo marcamos; si no, heredó.
+      el.setAttribute('data-pbn-fix2', '');
+      ++count;
+    }
+    return count;
   }
 
   function scanTree(node, budget) {
     if (!node || budget <= 0) return budget;
     if (node.nodeType === 1) {
       analyzeElement(node);
+      // Icono SVG sin fill propio: con la base a #000, fill:inherit lo
+      // dejaría negro (invisible). Lo marcamos para pintarlo con acento.
+      if (node.namespaceURI === 'http://www.w3.org/2000/svg' &&
+          !node.closest('[fill]:not([fill="inherit"]), [style*="fill"]')) {
+        node.setAttribute('data-pbn-svgfix', '');
+      }
       --budget;
       if (node.shadowRoot) {
         dressShadowRoot(node.shadowRoot);
@@ -176,10 +304,12 @@
 
   const SHADOW_CSS = `
     :host { background-color: #000 !important; color: var(--pbn-fg, #c9d1d9) !important; }
+    :host(:not(svg)) * { color: inherit; }
     :host a { color: var(--pbn-accent2, #00e5ff) !important; }
     :host h1, :host h2, :host h3, :host h4, :host h5, :host h6 { color: var(--pbn-fg-hi, #f0f6fc) !important; }
     :host input, :host textarea, :host select, :host button {
       background: var(--pbn-input, #0d1117) !important; color: inherit !important; }
+    :host img, :host video, :host canvas { background: transparent; }
     ::selection { background: var(--pbn-accent3, #ff2bd6) !important; color: #000 !important; }`;
 
   function dressShadowRoot(root) {
@@ -264,7 +394,8 @@
   }
 
   function armAutoProbe() {
-    if (autoProbeTimer !== null) return;
+    if (autoProbeTimer !== null || autoProbeCount >= 3) return;   // hasta 3 re-mediciones
+    ++autoProbeCount;
     autoProbeTimer = setTimeout(() => {
       autoProbeTimer = null;
       if (state.mode === 'auto' && effectiveEnabled()) apply();
@@ -323,14 +454,21 @@
       pendingRecords = null;
       if (!records || !effectiveEnabled()) return;
       let budget = BUDGET;
+      const attrTargets = [];              // deduplicación: un style con 5 cambios = 1 análisis
+      let treeBudget = budget;
       for (const rec of records) {
         if (rec.type === 'attributes') {
-          scanned.delete(rec.target);       // su style cambió: re-analizar
-          analyzeElement(rec.target);
+          if (!attrTargets.includes(rec.target)) attrTargets.push(rec.target);
         } else {
-          for (const node of rec.addedNodes) budget = scanTree(node, budget);
+          for (const node of rec.addedNodes) treeBudget = scanTree(node, treeBudget);
         }
-        if (budget <= 0) break;
+        if (treeBudget <= 0) break;
+      }
+      for (const el of attrTargets) {
+        if (treeBudget <= 0) break;
+        scanned.delete(el);                // su style cambió: re-analizar
+        analyzeElement(el);
+        --treeBudget;
       }
     }, 120);
   }
@@ -338,7 +476,34 @@
   const observer = new MutationObserver(records => {
     pendingRecords = pendingRecords ? pendingRecords.concat(records) : records;
     schedule();
+    scheduleDeepScan();                     // contenido dinámico también se rescata
   });
+
+  /* Pase profundo con backoff: el texto gris fijado por clases CSS puede
+     llegar en cualquier momento (SPA, scroll infinito). Se re-sondea en
+     cascada 0.7s → 1.6s → 3s → 6s → 12s → 24s y para cuando no encuentra
+     nada dos veces seguidas. Presupuesto fijo por pase: coste acotado. */
+  const DEEP_STEPS = [700, 1600, 3000, 6000, 12000, 24000];
+  let deepStep = 0;
+  let deepIdle = 0;
+  let deepTimer = null;
+
+  function scheduleDeepScan() {
+    if (deepTimer !== null || deepStep >= DEEP_STEPS.length) return;
+    deepTimer = setTimeout(() => {
+      deepTimer = null;
+      if (!effectiveEnabled() || !document.body) { deepIdle = 0; return; }
+      const found = deepScan(document.body, DEEP_MAX);
+      if (found > 0) {
+        deepIdle = 0;
+        deepStep = 1;                      // aún hay vida: seguir pronto (fase rápida)
+      } else {
+        if (++deepIdle >= 2) return;       // nada dos veces: dejar de sondear
+        ++deepStep;
+      }
+      scheduleDeepScan();
+    }, DEEP_STEPS[Math.min(deepStep, DEEP_STEPS.length - 1)]);
+  }
 
   function observe() {
     try {
@@ -352,10 +517,27 @@
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       observer.disconnect();
+      if (deepTimer !== null) {            // sondeo profundo pendiente: fuera
+        clearTimeout(deepTimer);
+        deepTimer = null;
+      }
+      if (autoProbeTimer !== null) {       // sonda pendiente: no desperdiciar
+        clearTimeout(autoProbeTimer);
+        autoProbeTimer = null;
+        --autoProbeCount;                  // devuelve el intento
+      }
+      if (timer !== null) {                // lote pendiente: cancelado
+        clearTimeout(timer);
+        timer = null;
+        pendingRecords = null;
+      }
     } else if (effectiveEnabled()) {
       apply();                               // re-decide (modo auto incluido)
       observe();
       pendingRecords = null;
+      deepStep = 0;                          // nueva fase de sondeo al volver
+      deepIdle = 0;
+      scheduleDeepScan();
       if (document.body) scanTree(document.body, BUDGET);
     }
   });
@@ -396,15 +578,20 @@
   }
 
   async function boot() {
+    autoProbeCount = 0;                    // nueva decisión: presupuesto completo
     apply();
     hookAttachShadow();
     observe();
     if (document.body) {
       scanTree(document.body, BUDGET);
+      scheduleDeepScan();
     } else {
       // document_start: el <body> aún no existe; escanear al llegar
       document.addEventListener('DOMContentLoaded', () => {
-        if (document.body) scanTree(document.body, BUDGET);
+        if (document.body) {
+          scanTree(document.body, BUDGET);
+          scheduleDeepScan();
+        }
       }, { once: true });
     }
   }
