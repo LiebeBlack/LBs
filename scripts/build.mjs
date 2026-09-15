@@ -34,6 +34,7 @@ const ENTRADAS = {
 const COPIAS = [
   ['manifest.json', 'manifest.json'],
   ['popup.html', 'popup.html'],
+  ['options.html', 'options.html'],
   ['popup.css', 'popup.css'],
   ['icon.svg', 'icon.svg'],
   ['src/engines/invert.css', 'invert.css'],
@@ -79,6 +80,7 @@ async function verificarSalida() {
   const referencias = [
     manifest.action?.default_popup,
     manifest.action?.default_icon,
+    manifest.options_ui?.page,
     ...Object.values(manifest.icons ?? {}),
     ...(manifest.content_scripts ?? []).flatMap((bloque) => [...(bloque.js ?? []), ...(bloque.css ?? [])]),
     ...(manifest.background?.scripts ?? []),

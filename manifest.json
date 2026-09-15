@@ -26,6 +26,10 @@
     "default_popup": "popup.html",
     "default_icon": "icon.svg"
   },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

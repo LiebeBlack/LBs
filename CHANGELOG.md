@@ -4,6 +4,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ## 2.6.1 — 2026-09-15
 
+### Añadido
+- **UI renovada**: popup más ancho (348 px, adaptable a pantallas móviles), controles más grandes con zonas táctiles de 34–44 px, secciones tipo tarjeta, brillos neón en el logotipo, interruptor y selección con glow, y soporte de `prefers-reduced-motion`.
+- **Página de opciones de tamaño completo** (`options.html`, abrible desde "Ajustes completos…" en el popup y desde about:addons), que comparte estilos con el popup.
+- Chip de versión en el popup y en las opciones, leído del manifest para que nunca se desincronice.
+
 ### Corregido
 
 **Texto invisible (negro sobre negro)**

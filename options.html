@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Pure Black Neon — Ajustes</title>
+  <link rel="stylesheet" href="popup.css" />
+  <style>
+    /* Ajustes de página completa (el popup y las opciones comparten estilos). */
+    body {
+      width: auto;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px 40px;
+    }
+    body > .pagina {
+      width: min(560px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    header {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    main { padding: 0; }
+    section { border-radius: 12px; padding: 14px 16px 16px; }
+    .extras label { margin: 0; padding: 9px 10px; }
+    footer {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 12px 16px 14px;
+    }
+    #host { max-width: none; }
+    .fila-doble {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 480px) {
+      .fila-doble { grid-template-columns: 1fr; }
+    }
+    .fila-doble .ghost { width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="pagina">
+    <header>
+      <span class="logo" aria-hidden="true"></span>
+      <h1>Pure Black Neon</h1>
+      <span class="chip" id="version" aria-label="Versión de la extensión">v—</span>
+      <label class="switch" title="Activar o desactivar en todas partes">
+        <input type="checkbox" id="enabled" aria-label="Activar en todas partes" />
+        <span class="slider" aria-hidden="true"></span>
+      </label>
+    </header>
+
+    <main>
+      <section>
+        <h2 id="lbl-engine">Motor</h2>
+        <div class="segmented" id="engine" role="radiogroup" aria-labelledby="lbl-engine">
+          <button type="button" role="radio" data-value="invert">Inversión</button>
+          <button type="button" role="radio" data-value="amoled">AMOLED</button>
+        </div>
+        <p class="hint" id="engine-hint"></p>
+      </section>
+
+      <section>
+        <h2 id="lbl-mode">Modo</h2>
+        <div class="segmented" id="mode" role="radiogroup" aria-labelledby="lbl-mode">
+          <button type="button" role="radio" data-value="auto">Auto</button>
+          <button type="button" role="radio" data-value="on">Siempre</button>
+        </div>
+        <p class="hint">Auto mide el fondo sin recorrer el DOM (3 lecturas de estilo como máximo) y no toca los sitios que ya son oscuros.</p>
+      </section>
+
+      <section class="extras">
+        <h2 id="lbl-extra">Ajustes</h2>
+        <label><input type="checkbox" id="strict" /> AMOLED estricto: negro puro también en contenedores</label>
+        <label><input type="checkbox" id="eco" /> Modo eco: solo CSS, sin capa de correcciones</label>
+        <label><input type="checkbox" id="kill-anim" /> Congelar animaciones y parpadeos</label>
+        <label><input type="checkbox" id="dim-media" /> Atenuar imágenes y videos</label>
+      </section>
+
+      <section>
+        <h2 id="lbl-accent">Acento</h2>
+        <div class="segmented" id="accent" role="radiogroup" aria-labelledby="lbl-accent">
+          <button type="button" role="radio" data-value="multi">Multi</button>
+          <button type="button" role="radio" data-value="green">Verde</button>
+          <button type="button" role="radio" data-value="cyan">Cian</button>
+          <button type="button" role="radio" data-value="magenta">Magenta</button>
+        </div>
+      </section>
+
+      <footer>
+        <div class="fila">
+          <button type="button" id="exclude" class="ghost">Excluir este sitio</button>
+          <span id="host">—</span>
+        </div>
+        <p class="hint" id="tab-state"></p>
+        <div class="fila">
+          <button type="button" id="tab-fix" class="ghost" hidden>Reactivar esta pestaña</button>
+        </div>
+        <div class="fila-doble">
+          <button type="button" id="reset" class="ghost">Valores por defecto</button>
+        </div>
+        <div class="fila">
+          <span id="status" class="status" role="status" aria-live="polite"></span>
+        </div>
+        <p class="hint" id="shortcut"></p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -41,7 +41,9 @@ const refs = {
   reset: $('reset'),
   status: $('status'),
   engineHint: $('engine-hint'),
-  shortcut: $('shortcut')
+  shortcut: $('shortcut'),
+  version: $('version'),
+  openOptions: $('open-options')
 };
 
 const PISTAS_MOTOR = {
@@ -215,7 +217,20 @@ function conectarAcciones() {
     })();
   });
 
+  refs.openOptions?.addEventListener('click', () => {
+    void (async () => {
+      try {
+        await browser.runtime.openOptionsPage();
+      } catch (err) {
+        error('no se pudo abrir la página de opciones:', mensajeDeError(err));
+      }
+    })();
+  });
+
   if (refs.shortcut) refs.shortcut.textContent = `Atajo: ${ATAJO}`;
+
+  // Chip de versión: se lee del manifest para no poder desincronizarse jamás.
+  if (refs.version) refs.version.textContent = `v${browser.runtime.getManifest().version}`;
 }
 
 /* ---------------------------------------------------------------------------
@@ -223,6 +238,13 @@ function conectarAcciones() {
    --------------------------------------------------------------------------- */
 
 async function resolverPestana() {
+  // En la página de opciones el "sitio actual" no existe: tabs.query resolvería
+  // la propia pestaña (la UUID de la extensión como host). Queda en "—".
+  if (location.pathname.endsWith('options.html')) {
+    host = '';
+    tabOff = false;
+    return;
+  }
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     const id = tab?.id ?? null;

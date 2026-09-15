@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <title>Pure Black Neon — ajustes</title>
   <link rel="stylesheet" href="popup.css" />
@@ -10,6 +11,7 @@
   <header>
     <span class="logo" aria-hidden="true"></span>
     <h1>Pure Black Neon</h1>
+    <span class="chip" id="version" aria-label="Versión de la extensión">v—</span>
     <label class="switch" title="Activar o desactivar en todas partes">
       <input type="checkbox" id="enabled" aria-label="Activar en todas partes" />
       <span class="slider" aria-hidden="true"></span>
@@ -66,7 +68,10 @@
         <button type="button" id="reset" class="ghost">Valores por defecto</button>
         <span id="status" class="status" role="status" aria-live="polite"></span>
       </div>
-      <p class="hint" id="shortcut"></p>
+      <div class="fila">
+        <p class="hint" id="shortcut"></p>
+        <button type="button" id="open-options" class="link">Ajustes completos…</button>
+      </div>
     </footer>
   </main>
 
