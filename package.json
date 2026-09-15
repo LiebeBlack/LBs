@@ -1,0 +1,26 @@
+{
+  "name": "pure-black-neon",
+  "version": "2.6.0",
+  "private": true,
+  "description": "Tema oscuro AMOLED e inversión con preservación de media para Firefox (WebExtensions MV3).",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "clean": "node scripts/build.mjs --clean",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:addons": "web-ext lint --source-dir build --output json --no-input",
+    "start": "npm run build && web-ext run --source-dir build",
+    "package": "npm run build && web-ext build --source-dir build --artifacts-dir dist --overwrite-dest"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "eslint": "^9.10.0",
+    "web-ext": "^8.0.0"
+  }
+}

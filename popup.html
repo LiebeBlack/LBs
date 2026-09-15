@@ -1,50 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8" />
+  <meta name="color-scheme" content="dark" />
+  <title>Pure Black Neon — ajustes</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
   <header>
     <span class="logo" aria-hidden="true"></span>
     <h1>Pure Black Neon</h1>
-    <label class="switch" title="Activar o desactivar globalmente">
-      <input type="checkbox" id="enabled" />
-      <span class="slider"></span>
+    <label class="switch" title="Activar o desactivar en todas partes">
+      <input type="checkbox" id="enabled" aria-label="Activar en todas partes" />
+      <span class="slider" aria-hidden="true"></span>
     </label>
   </header>
 
   <main>
     <section>
-      <h2>Modo de fuerza</h2>
-      <div class="segmented" id="mode" role="radiogroup" aria-label="Modo de fuerza">
-        <button data-value="auto">Auto</button>
-        <button data-value="on">Base</button>
-        <button data-value="force">Forzado</button>
-        <button data-value="turbo">Turbo</button>
+      <h2 id="lbl-engine">Motor</h2>
+      <div class="segmented" id="engine" role="radiogroup" aria-labelledby="lbl-engine">
+        <button type="button" role="radio" data-value="invert">Inversión</button>
+        <button type="button" role="radio" data-value="amoled">AMOLED</button>
       </div>
-      <p class="hint">Auto detecta sitios ya oscuros y no los toca (y mira bajo el fondo si lo pintan con JS). Forzado aplasta componentes; Turbo neutraliza filtros y blur.</p>
+      <p class="hint" id="engine-hint"></p>
     </section>
 
     <section>
-      <h2>Acento</h2>
-      <div class="segmented" id="accent" role="radiogroup" aria-label="Acento">
-        <button data-value="multi">Multicolor</button>
-        <button data-value="green">Verde</button>
-        <button data-value="cyan">Cian</button>
-        <button data-value="magenta">Magenta</button>
+      <h2 id="lbl-mode">Modo</h2>
+      <div class="segmented" id="mode" role="radiogroup" aria-labelledby="lbl-mode">
+        <button type="button" role="radio" data-value="auto">Auto</button>
+        <button type="button" role="radio" data-value="on">Siempre</button>
       </div>
+      <p class="hint">Auto mide el fondo una sola vez (2 lecturas como máximo) y no toca los sitios que ya son oscuros.</p>
     </section>
 
     <section class="extras">
-      <h2>Extras</h2>
+      <h2 id="lbl-extra">Ajustes</h2>
+      <label><input type="checkbox" id="strict" /> AMOLED estricto: negro puro también en contenedores</label>
+      <label><input type="checkbox" id="eco" /> Modo eco: solo CSS, sin capa de correcciones</label>
       <label><input type="checkbox" id="kill-anim" /> Congelar animaciones y parpadeos</label>
       <label><input type="checkbox" id="dim-media" /> Atenuar imágenes y videos</label>
     </section>
 
+    <section>
+      <h2 id="lbl-accent">Acento</h2>
+      <div class="segmented" id="accent" role="radiogroup" aria-labelledby="lbl-accent">
+        <button type="button" role="radio" data-value="multi">Multi</button>
+        <button type="button" role="radio" data-value="green">Verde</button>
+        <button type="button" role="radio" data-value="cyan">Cian</button>
+        <button type="button" role="radio" data-value="magenta">Magenta</button>
+      </div>
+    </section>
+
     <footer>
-      <button id="exclude" class="ghost">Excluir este sitio</button>
-      <span id="host"></span>
+      <div class="fila">
+        <button type="button" id="exclude" class="ghost">Excluir este sitio</button>
+        <span id="host">—</span>
+      </div>
+      <p class="hint" id="tab-state"></p>
+      <div class="fila">
+        <button type="button" id="tab-fix" class="ghost" hidden>Reactivar esta pestaña</button>
+      </div>
+      <div class="fila">
+        <button type="button" id="reset" class="ghost">Valores por defecto</button>
+        <span id="status" class="status" role="status" aria-live="polite"></span>
+      </div>
+      <p class="hint" id="shortcut"></p>
     </footer>
   </main>
 

@@ -19,7 +19,6 @@ jobs:
     outputs:
       version: ${{ steps.meta.outputs.version }}
       zip_name: ${{ steps.meta.outputs.zip_name }}
-      xpi_name: ${{ steps.meta.outputs.xpi_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -28,15 +27,22 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
 
-      - name: Install web-ext
-        run: npm install -g web-ext@8
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
 
-      - name: Lint (web-ext)
+      - name: Lint del código (ESLint)
+        run: npm run lint
+
+      - name: Build (esbuild → build/)
+        run: npm run build
+
+      - name: Lint de la extensión (web-ext)
         continue-on-error: true
-        run: web-ext lint --source-dir . --output json --no-input > web-ext-lint.json || true
+        run: npm run lint:addons > web-ext-lint.json || true
 
-      - name: Show lint summary
+      - name: Resumen del lint
         if: always()
         run: |
           if [ -f web-ext-lint.json ]; then
@@ -45,32 +51,31 @@ jobs:
             echo 'sin informe de lint'
           fi
 
-      - name: Package .xpi
-        run: web-ext build --source-dir . --artifacts-dir dist --overwrite-dest
+      - name: Empaquetar .xpi
+        run: npx web-ext build --source-dir build --artifacts-dir dist --overwrite-dest
 
-      - name: Collect build metadata
+      - name: Metadatos del build
         id: meta
         run: |
-          VERSION=$(node -e "console.log(require('./manifest.json').version)")
+          VERSION=$(node -e "console.log(require('./build/manifest.json').version)")
           ZIP=$(ls dist/*.zip | head -n1)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "zip_name=$(basename "$ZIP")" >> "$GITHUB_OUTPUT"
-          echo "xpi_name=$(basename "${ZIP%.zip}").xpi" >> "$GITHUB_OUTPUT"
 
-      - name: Upload artifact (.zip)
+      - name: Subir artifact (.zip)
         uses: actions/upload-artifact@v7
         with:
           name: pure-black-neon-xpi
           path: dist/*.zip
 
-      - name: Upload lint report
+      - name: Subir informe de lint
         if: always() && hashFiles('web-ext-lint.json') != ''
         uses: actions/upload-artifact@v7
         with:
           name: web-ext-lint-report
           path: web-ext-lint.json
 
-      - name: Job summary
+      - name: Resumen del job
         if: always()
         run: |
           {
@@ -81,7 +86,7 @@ jobs:
             echo "| **Versión** | ${{ steps.meta.outputs.version }} |"
             echo "| **Paquete** | ${{ steps.meta.outputs.zip_name }} |"
             if [ -f web-ext-lint.json ]; then
-              node -e "const r=require('./web-ext-lint.json');const t=(r.errors||[]).length,w=(r.warnings||[]).length;console.log('| **Lint** | '+t+' errores, '+w+' avisos |')"
+              node -e "const r=require('./web-ext-lint.json');const t=(r.errors||[]).length,w=(r.warnings||[]).length;console.log('| **web-ext lint** | '+t+' errores, '+w+' avisos |')"
               node -e "
                 const r=require('./web-ext-lint.json');
                 const items=[...(r.errors||[]),...(r.warnings||[])];
@@ -92,14 +97,14 @@ jobs:
                   for(const it of items){
                     const sev=(it._code&&String(it._code).startsWith('SYNTAX'))?'error':'aviso';
                     console.log('- ['+sev+'] '+(it.code||'?')+' — '+(it.message||''));
-                    if(it.file) console.log('  - archivo: \`'+it.file+'\`');
+                    if(it.file) console.log('  - archivo: \\`'+it.file+'\\`');
                   }
                 }"
             else
-              echo "| **Lint** | sin informe |"
+              echo "| **web-ext lint** | sin informe |"
             fi
             echo ""
-            echo "El .xpi adjunto al artifact **pure-black-neon-xpi** está listo para Firefox Add-ons."
+            echo "El .xpi del artifact **pure-black-neon-xpi** sale del directorio \`build/\` generado por esbuild."
           } >> "$GITHUB_STEP_SUMMARY"
 
   release:
@@ -107,20 +112,20 @@ jobs:
     needs: lint-and-package
     runs-on: ubuntu-latest
     steps:
-      - name: Download xpi
+      - name: Descargar .xpi
         uses: actions/download-artifact@v8
         with:
           name: pure-black-neon-xpi
           path: dist
 
-      - name: Rename zip to xpi
+      - name: Renombrar .zip a .xpi
         run: |
           for f in dist/*.zip; do
             [ -e "$f" ] || continue
             mv "$f" "${f%.zip}.xpi"
           done
 
-      - name: Attach to release
+      - name: Adjuntar al release
         uses: softprops/action-gh-release@v3
         with:
           files: dist/*.xpi
@@ -141,20 +146,20 @@ jobs:
     needs: lint-and-package
     runs-on: ubuntu-latest
     steps:
-      - name: Download xpi
+      - name: Descargar .xpi
         uses: actions/download-artifact@v8
         with:
           name: pure-black-neon-xpi
           path: dist
 
-      - name: Rename zip to xpi
+      - name: Renombrar .zip a .xpi
         run: |
           for f in dist/*.zip; do
             [ -e "$f" ] || continue
             mv "$f" "${f%.zip}.xpi"
           done
 
-      - name: Create or update release
+      - name: Crear o actualizar release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.lint-and-package.outputs.version }}

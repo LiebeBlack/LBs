@@ -1,0 +1,267 @@
+/* ============================================================================
+   Pure Black Neon v2.6 — MOTOR DE INVERSIÓN (invert.css)     CAPA 1A
+   ----------------------------------------------------------------------------
+   Contrato: solo se aplica con html[data-pbn-engine="invert"]:not([data-pbn-off]).
+   Se inyecta en document_start desde el manifest, así que el primer pintado ya
+   es oscuro: cero destello blanco sin depender de ninguna lectura asíncrona.
+
+   Matemática de la cancelación (importante, no cambiar el orden):
+     · El filtro del documento es   F = H ∘ I   (`invert(100%) hue-rotate(180deg)`
+       aplica primero invert y después hue-rotate).
+     · La re-inversión de media usa el ORDEN OPUESTO   G = I ∘ H
+       (`hue-rotate(180deg) invert(100%)`), de modo que
+       F(G(x)) = H(I(I(H(x)))) = H(H(x)) = x  →  colores originales exactos.
+       Con el mismo orden que el padre quedaría un residuo visible, porque
+       invert y hue-rotate no conmutan.
+
+   Regla de oro: la media (img, video, canvas, iframe, embed, object) y los
+   fondos con imagen vuelven a su color original. El SVG inline NO se
+   re-invierte: los iconos `fill: currentColor` seguirían oscuros sobre negro.
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   1. Documento invertido (una sola capa de composición, sin recorrer el DOM).
+   El filtro va SIEMPRE en <html> y nunca en <body>: la especificación de Filter
+   Effects exime al elemento raíz de crear containing block para descendientes
+   position:fixed, así que las cabeceras fijas y sticky siguen funcionando.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+  filter: invert(100%) hue-rotate(180deg) !important;
+  color-scheme: light !important; /* los widgets UA claros se vuelven oscuros al invertir */
+  scrollbar-width: thin;
+  /* El scrollbar lo dibuja el navegador, NO el filtro: aquí van los neones reales. */
+  scrollbar-color: #00e5ff #000000;
+}
+
+/* ---------------------------------------------------------------------------
+   2. Lienzo negro absoluto.
+   No forzamos el fondo de <html>/<body> para poder MEDIR sus colores reales en
+   el modo Auto; en su lugar pintamos un respaldo fijo que cubre el viewport.
+   Blanco pre-inversión → #000000 exacto en pantalla (los neutros son
+   invariantes bajo hue-rotate(180deg)).
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="invert"]:not([data-pbn-off])::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Re-inversión de media: orden invertido ⇒ cancelación exacta.
+   [data-pbn-media] lo escribe la Capa 2 cuando descubre un fondo con foto
+   (background-image) que sin rescate quedaría en negativo.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) :is(
+    img,
+    picture,
+    video,
+    canvas,
+    iframe,
+    embed,
+    object,
+    [style*="background-image"],
+    [data-pbn-media]
+  ):not([data-pbn-filterreset]) {
+  filter: hue-rotate(180deg) invert(100%) !important;
+}
+
+/* Dentro de un bloque ya re-invertido no se re-invierte nada más: la suma de
+   dos cadenas G se cancelaría entre sí y la imagen volvería al negativo. */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-media] :is(
+    img,
+    picture,
+    video,
+    canvas,
+    iframe,
+    embed,
+    object,
+    [style*="background-image"],
+    [data-pbn-media]
+  ) {
+  filter: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+   4. AMOLED ESTRICTO (data-pbn-strict): negro #000000 puro también en los
+   contenedores, no solo en el lienzo.
+   Se suspende mientras el motor mide el sitio (data-pbn-measuring), porque
+   estos fondos enmascararían el color real del documento y el modo Auto
+   decidiría mal. La suspensión dura milisegundos y nunca afecta al filtro ni
+   al lienzo: durante la ventana el sitio sigue viéndose oscuro.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pbn-measuring]) :is(
+    main,
+    [role="main"],
+    article,
+    section,
+    aside,
+    nav,
+    header,
+    footer,
+    dialog,
+    [role="dialog"],
+    div,
+    form,
+    fieldset,
+    menu,
+    details,
+    summary,
+    figure,
+    figcaption,
+    blockquote,
+    address,
+    ul,
+    ol,
+    li,
+    dl,
+    dt,
+    dd,
+    table,
+    thead,
+    tbody,
+    tfoot,
+    tr,
+    td,
+    th,
+    span,
+    p,
+    hgroup
+  ) {
+  background-color: #ffffff !important; /* → #000000 en pantalla */
+  box-shadow: none !important;          /* las sombras claras serían halos blancos */
+}
+/* html/body: el fondo sí se aplana, pero la imagen de fondo se elimina porque
+   no se puede re-invertir sin cancelar la inversión de todo el subárbol. */
+html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pbn-measuring]),
+html[data-pbn-engine="invert"][data-pbn-strict]:not([data-pbn-off]):not([data-pbn-measuring]) > body {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Correcciones de la Capa 2/3 en el motor de inversión.
+   --------------------------------------------------------------------------- */
+
+/* Filtros del propio sitio que alteran luminancia (invert, brightness, sepia…):
+   invertidos darían artefactos de color. Ver patch de la Capa 2. */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-filterreset] {
+  filter: none !important;
+}
+
+/* mix-blend-mode depende de la luminancia del fondo: al invertir el resultado
+   se da la vuelta (multiply → screen). */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-blend] {
+  mix-blend-mode: normal !important;
+}
+
+/* backdrop-filter (glassmorphism): el desenfoque del fondo invertido queda
+   turbio y sucio. */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) [data-pbn-backdrop] {
+  backdrop-filter: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+   6. Acentos neón mínimos: foco y selección (elección de producto).
+   Estos valores son PRE-INVERSIÓN: el filtro los convierte en la familia de
+   color de marca (menta, cian claro, rosa). Un neón 100 % saturado no es
+   alcanzable por el pipeline invert+hue-rotate; el neón literal está en el
+   motor AMOLED, donde no hay inversión.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+  --pbn-pre-green: #006b45;   /* en pantalla ≈ menta  */
+  --pbn-pre-cyan: #00596b;    /* en pantalla ≈ cian   */
+  --pbn-pre-magenta: #730061; /* en pantalla ≈ rosa   */
+  --pbn-pre-accent: var(--pbn-pre-green);
+  --pbn-pre-accent2: var(--pbn-pre-cyan);
+  --pbn-pre-accent3: var(--pbn-pre-magenta);
+  caret-color: var(--pbn-pre-accent2);
+}
+
+html[data-pbn-engine="invert"]:not([data-pbn-off])[data-pbn-accent="green"] {
+  --pbn-pre-accent: var(--pbn-pre-green);
+  --pbn-pre-accent2: var(--pbn-pre-green);
+  --pbn-pre-accent3: var(--pbn-pre-green);
+}
+html[data-pbn-engine="invert"]:not([data-pbn-off])[data-pbn-accent="cyan"] {
+  --pbn-pre-accent: var(--pbn-pre-cyan);
+  --pbn-pre-accent2: var(--pbn-pre-cyan);
+  --pbn-pre-accent3: var(--pbn-pre-cyan);
+}
+html[data-pbn-engine="invert"]:not([data-pbn-off])[data-pbn-accent="magenta"] {
+  --pbn-pre-accent: var(--pbn-pre-magenta);
+  --pbn-pre-accent2: var(--pbn-pre-magenta);
+  --pbn-pre-accent3: var(--pbn-pre-magenta);
+}
+
+html[data-pbn-engine="invert"]:not([data-pbn-off]) ::selection {
+  background: var(--pbn-pre-accent) !important;
+  color: #ffffff !important;
+}
+html[data-pbn-engine="invert"]:not([data-pbn-off]) :focus-visible {
+  outline: 2px solid var(--pbn-pre-accent2) !important;
+  outline-offset: 1px;
+}
+/* Controles nativos: el acento se invierte igual que el resto de la página. */
+html[data-pbn-engine="invert"]:not([data-pbn-off]) :is(
+    input[type="checkbox"],
+    input[type="radio"],
+    input[type="range"]
+  ) {
+  accent-color: var(--pbn-pre-accent2);
+}
+
+/* ---------------------------------------------------------------------------
+   7. Extras opcionales.
+   `dimmedia` en este motor: las funciones de atenuación van DELANTE de la
+   cadena de re-inversión para que el resultado neto sea exactamente
+   contrast/brightness sobre la imagen original.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="invert"][data-pbn-dimmedia]:not([data-pbn-off]) :is(img, video, picture) {
+  filter: brightness(0.82) contrast(1.05) hue-rotate(180deg) invert(100%) !important;
+}
+html[data-pbn-engine="invert"][data-pbn-killanim]:not([data-pbn-off]) *,
+html[data-pbn-engine="invert"][data-pbn-killanim]:not([data-pbn-off]) *::before,
+html[data-pbn-engine="invert"][data-pbn-killanim]:not([data-pbn-off]) *::after {
+  animation: none !important;
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-pbn-engine="invert"]:not([data-pbn-off]) * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   8. Salvaguardas obligatorias.
+   --------------------------------------------------------------------------- */
+
+/* Impresión: nunca en negativo. */
+@media print {
+  html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+    filter: none !important;
+    background-color: #ffffff !important;
+  }
+  html[data-pbn-engine="invert"]:not([data-pbn-off]) * {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+  html[data-pbn-engine="invert"]:not([data-pbn-off])::before {
+    display: none !important;
+  }
+}
+
+/* Alto contraste del sistema: la accesibilidad manda sobre el tema. */
+@media (forced-colors: active) {
+  html[data-pbn-engine="invert"]:not([data-pbn-off]) {
+    filter: none !important;
+  }
+  html[data-pbn-engine="invert"]:not([data-pbn-off])::before {
+    display: none !important;
+  }
+}

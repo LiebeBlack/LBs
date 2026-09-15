@@ -1,0 +1,391 @@
+/* ============================================================================
+   Pure Black Neon v2.6 — MOTOR AMOLED POR SELECTORES (amoled.css)   CAPA 1B
+   ----------------------------------------------------------------------------
+   Contrato: solo se aplica con html[data-pbn-engine="amoled"]:not([data-pbn-off]).
+   Negro puro #000000 estricto en el árbol estructural, texto claro legible y
+   acentos neón literales (aquí no hay inversión, así que los neones son los
+   valores reales de marca).
+
+   Regla de oro: la media (img/video/canvas/iframe/svg/embed/object/audio)
+   NUNCA se toca.
+   Orden de cascada: agresivo → base → pulido → marcas → media (gana la última).
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   1. Variables + lienzo
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) {
+  --pbn-accent: #00ff9c;
+  --pbn-accent2: #00e5ff;
+  --pbn-accent3: #ff2bd6;
+  --pbn-fg: #e8eef4;
+  --pbn-fg-dim: #a8b3bf;
+  --pbn-fg-hi: #ffffff;
+  --pbn-line: #30363d;
+  --pbn-input: #0d1117;
+  background-color: #000000 !important;
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pbn-accent) #0a0a0a;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off])[data-pbn-accent="green"] {
+  --pbn-accent: #00ff9c;
+  --pbn-accent2: #00ff9c;
+  --pbn-accent3: #00ff9c;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off])[data-pbn-accent="cyan"] {
+  --pbn-accent: #00e5ff;
+  --pbn-accent2: #00e5ff;
+  --pbn-accent3: #00e5ff;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off])[data-pbn-accent="magenta"] {
+  --pbn-accent: #ff2bd6;
+  --pbn-accent2: #ff2bd6;
+  --pbn-accent3: #ff2bd6;
+}
+
+/* ---------------------------------------------------------------------------
+   2. Aplastado agresivo (modo estricto): cualquier superficie no-media pasa a
+   negro puro, sin imágenes de fondo ni sombras claras. `:where()` mantiene la
+   especificidad en 0 para que el pulido posterior pueda recuperar controles.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="amoled"][data-pbn-strict]:not([data-pbn-off]) :where(
+    :not(img):not(video):not(iframe):not(canvas):not(svg):not(picture):not(source):not(embed):not(object):not(track):not(audio):not(input):not(textarea):not(select):not(button):not(option):not(progress):not(meter)
+  ) {
+  background-color: #000000 !important;
+  background-image: none !important;
+  border-color: var(--pbn-line) !important;
+  border-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  mix-blend-mode: normal !important;
+}
+html[data-pbn-engine="amoled"][data-pbn-strict]:not([data-pbn-off]) :where(button) {
+  background-color: #000000 !important;
+}
+
+/* Texto con gradiente (background-clip:text + relleno transparente) se
+   volvería invisible sobre negro: lo rellenamos con el color actual. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) :where(*) {
+  -webkit-text-fill-color: currentColor;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Base: negro puro en el árbol estructural.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) body,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) div,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) section,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) article,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) aside,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) nav,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) header,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) footer,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) main,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) form,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) fieldset,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) legend,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) label,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ul,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ol,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) li,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) dl,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) dt,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) dd,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) table,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) thead,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) tbody,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) tfoot,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) tr,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) td,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) th,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) figure,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) figcaption,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) blockquote,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) address,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) details,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) summary,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) dialog,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) menu,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) span,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) p {
+  background-color: #000000 !important;
+  background-image: none !important;
+  color: var(--pbn-fg) !important;
+  border-color: var(--pbn-line) !important;
+}
+
+/* Elementos semánticos fuera del bloque base. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) pre,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) code,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) kbd,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) samp,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) var,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) tt,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) hgroup,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) abbr,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) cite,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) q,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) data,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) output,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) bdi,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) bdo,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) del,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ins,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) s,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) u,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ruby,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) rt,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) rb,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) rp,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) center,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) font,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h1,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h2,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h3,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h4,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h5,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h6 {
+  background-color: #000000 !important;
+  background-image: none !important;
+  border-color: var(--pbn-line) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h1,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h2,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h3,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h4,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h5,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) h6 {
+  color: var(--pbn-fg-hi) !important;
+}
+
+/* Texto por defecto: sin color propio hereda blanco; los colores oscuros que
+   los sitios fijan por clase los rescata la Capa 2 con [data-pbn-fix2]. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) :where(*) {
+  color: var(--pbn-fg);
+  outline-color: var(--pbn-accent);
+}
+
+/* Capas superiores (dialog, popover): también negras. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) dialog::backdrop,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [popover]::backdrop {
+  background: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(2px) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   4. Pulido: controles, tipografía y adornos.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) input,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) textarea,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) select,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) button,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) optgroup,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) progress,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) meter {
+  background-color: var(--pbn-input) !important;
+  color: var(--pbn-fg) !important;
+  border-color: var(--pbn-line) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ::placeholder {
+  color: var(--pbn-fg-dim) !important;
+  opacity: 1 !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) input:autofill,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--pbn-input) inset;
+  box-shadow: 0 0 0 1000px var(--pbn-input) inset;
+  -webkit-text-fill-color: var(--pbn-fg);
+  caret-color: var(--pbn-fg);
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) strong,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) b,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) th {
+  color: var(--pbn-fg-hi) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) small,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) caption,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) figcaption,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) time {
+  color: var(--pbn-fg-dim) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) mark {
+  background: color-mix(in srgb, var(--pbn-accent) 24%, #000000) !important;
+  color: var(--pbn-fg-hi) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ins {
+  text-decoration-color: var(--pbn-accent) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) del,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) s {
+  color: var(--pbn-fg-dim) !important;
+  text-decoration-color: var(--pbn-accent3) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) abbr[title] {
+  text-decoration-color: var(--pbn-accent2) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) pre,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) code,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) kbd,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) samp,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) var {
+  color: var(--pbn-accent) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) kbd {
+  border: 1px solid var(--pbn-line) !important;
+  border-radius: 4px;
+  background: #0a0a0a !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) hr {
+  border: none;
+  border-top: 1px solid var(--pbn-line) !important;
+  background: transparent !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ::marker {
+  color: var(--pbn-accent) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ::cue {
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: #ffffff !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) a {
+  color: var(--pbn-accent2) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) a:visited {
+  color: color-mix(in srgb, var(--pbn-accent3) 55%, #c9c9ff) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) a:hover {
+  color: var(--pbn-fg-hi) !important;
+  text-decoration-color: var(--pbn-accent2);
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ::selection {
+  background: var(--pbn-accent3) !important;
+  color: #000000 !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) :focus-visible {
+  outline: 2px solid var(--pbn-accent) !important;
+  outline-offset: 1px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--pbn-accent) 60%, transparent) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) progress::-moz-progress-bar {
+  background: var(--pbn-accent) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) meter::-moz-meter-bar {
+  background: var(--pbn-accent) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) input[type="checkbox"],
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) input[type="radio"],
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) input[type="range"] {
+  accent-color: var(--pbn-accent);
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) ::file-selector-button {
+  background-color: var(--pbn-input) !important;
+  color: var(--pbn-fg) !important;
+  border: 1px solid var(--pbn-line) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   5. Marcas de la Capa 2/3 (el JS solo escribe atributos; aquí se pinta).
+   --------------------------------------------------------------------------- */
+
+/* Texto que quedaría invisible sobre el negro. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-fix] {
+  color: var(--pbn-fg-hi) !important;
+}
+/* Texto oscuro fijado por clases CSS. Dentro de un bloque preservado el color
+   original del sitio sí es válido, así que no se toca. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-fix2]:not([data-pbn-media] *) {
+  color: var(--pbn-fg) !important;
+}
+/* Bloque claro (fondo o gradiente inline): se lleva a negro puro y sus enlaces
+   pasan a los acentos neón, porque sobre negro los tonos profundos del sitio
+   perderían todo el contraste. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-bg] {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-bg] a {
+  color: var(--pbn-accent2) !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-bg] a:visited {
+  color: color-mix(in srgb, var(--pbn-accent3) 55%, #c9c9ff) !important;
+}
+/* Texto con gradiente que se volvería invisible: se quita el recorte, se
+   rellena con el color de texto y se fuerza el color por si el sitio lo dejó en
+   transparente (muchos usan `color: transparent` en vez de text-fill-color). */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-grad] {
+  background-image: none !important;
+  -webkit-text-fill-color: var(--pbn-fg) !important;
+  color: var(--pbn-fg) !important;
+}
+/* Icono SVG cuyo relleno oscuro lo dejaría negro sobre negro. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-svg] {
+  fill: var(--pbn-accent2) !important;
+  stroke: var(--pbn-accent2) !important;
+}
+/* Sombras claras que en negro son halos flotantes. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) [data-pbn-flat] {
+  box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+   6. Media SIEMPRE protegido (contenido, no interfaz). Gana por orden fuente.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) img,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) video,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) iframe,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) canvas,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) picture,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) source,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) embed,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) object,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) audio,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) svg {
+  filter: none !important;
+}
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) img,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) video {
+  background-color: transparent;
+}
+/* Anti-flash: los iframes muestran un lienzo blanco hasta cargar. Sin
+   !important a propósito: si el sitio pinta su propio fondo, gana el sitio. */
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) iframe,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) embed,
+html[data-pbn-engine="amoled"]:not([data-pbn-off]) object {
+  background-color: #000000;
+}
+
+/* ---------------------------------------------------------------------------
+   7. Extras opcionales.
+   --------------------------------------------------------------------------- */
+html[data-pbn-engine="amoled"][data-pbn-dimmedia]:not([data-pbn-off]) img,
+html[data-pbn-engine="amoled"][data-pbn-dimmedia]:not([data-pbn-off]) video,
+html[data-pbn-engine="amoled"][data-pbn-dimmedia]:not([data-pbn-off]) picture {
+  filter: brightness(0.82) contrast(1.05) !important;
+}
+html[data-pbn-engine="amoled"][data-pbn-killanim]:not([data-pbn-off]) *,
+html[data-pbn-engine="amoled"][data-pbn-killanim]:not([data-pbn-off]) *::before,
+html[data-pbn-engine="amoled"][data-pbn-killanim]:not([data-pbn-off]) *::after {
+  animation: none !important;
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-pbn-engine="amoled"]:not([data-pbn-off]) * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   8. Impresión: nunca en negro.
+   --------------------------------------------------------------------------- */
+@media print {
+  html[data-pbn-engine="amoled"]:not([data-pbn-off]),
+  html[data-pbn-engine="amoled"]:not([data-pbn-off]) * {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

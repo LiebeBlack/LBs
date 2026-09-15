@@ -13,7 +13,7 @@
 * { box-sizing: border-box; }
 
 body {
-  width: 300px;
+  width: 320px;
   margin: 0;
   background: var(--bg);
   color: var(--fg);
@@ -107,23 +107,30 @@ h2 {
 
 .extras label {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  margin: 4px 0;
+  margin: 6px 0;
   cursor: pointer;
+  line-height: 1.35;
 }
-.extras input { accent-color: var(--green); }
+.extras input { margin-top: 1px; accent-color: var(--green); }
 
 footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--line);
 }
 
-#exclude {
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 26px;
+}
+.fila + .fila { margin-top: 6px; }
+
+.ghost {
   padding: 5px 10px;
   background: transparent;
   border: 1px solid var(--line);
@@ -132,9 +139,22 @@ footer {
   font: inherit;
   cursor: pointer;
 }
-#exclude:hover { border-color: var(--magenta); color: var(--magenta); }
+.ghost:hover { border-color: var(--magenta); color: var(--magenta); }
+.ghost:disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--line); color: var(--dim); }
+.ghost[aria-pressed="true"] { border-color: var(--magenta); color: var(--magenta); }
+.ghost[hidden] { display: none; }
 
-#host { font-size: 11px; color: var(--dim); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#host {
+  font-size: 11px;
+  color: var(--dim);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status { font-size: 11px; color: var(--green); }
+.status.error { color: var(--magenta); }
 
 :focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
 

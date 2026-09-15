@@ -1,9 +1,13 @@
-# Artefactos de empaquetado
+# Artefactos de empaquetado y build
 dist/
+build/
 *.xpi
 *.zip
 web-ext-lint.json
 node_modules/
+
+# Toolchain portátil local (nunca se commitea)
+.tools/
 
 # Sistema
 .DS_Store
