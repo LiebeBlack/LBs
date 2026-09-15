@@ -41,17 +41,14 @@ jobs:
         run: npm run build
 
       - name: Lint de la extensión (web-ext)
+        # `--silent` evita que npm escriba su banner dentro del archivo: el
+        # informe tiene que ser JSON puro.
         continue-on-error: true
-        run: npm run lint:addons > web-ext-lint.json || true
+        run: npm --silent run lint:addons > web-ext-lint.json
 
       - name: Resumen del lint
         if: always()
-        run: |
-          if [ -f web-ext-lint.json ]; then
-            node -e "const r=require('./web-ext-lint.json');const t=(r.errors||[]).length,w=(r.warnings||[]).length;console.log('web-ext lint: '+t+' errores, '+w+' avisos');"
-          else
-            echo 'sin informe de lint'
-          fi
+        run: node scripts/webext-report.mjs
 
       - name: Empaquetar .xpi
         run: npx web-ext build --source-dir build --artifacts-dir dist --overwrite-dest
