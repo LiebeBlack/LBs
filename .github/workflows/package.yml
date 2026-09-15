@@ -27,10 +27,12 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: npm
 
+      # Sin package-lock.json versionado, `npm ci` y la caché de setup-node
+      # fallarían. Cuando se genere y se suba el lockfile, esto se puede cambiar
+      # a `npm ci` + `cache: npm`.
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Lint del código (ESLint)
         run: npm run lint
