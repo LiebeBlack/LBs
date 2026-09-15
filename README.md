@@ -103,8 +103,8 @@ Eso lo hace idempotente, reversible (`resetCorrections()`) y auditable.
 |---|---|
 | Rebanada de tiempo por tarea | 8 ms |
 | Programación | `requestIdleCallback` (fallback `setTimeout`) |
-| Nodos visitados por tarea | 2000 (400 en submarcos, 800 si el DOM pasa de 20 000 nodos) |
-| Presupuesto total de CPU | 40 ms por página; al agotarse, la capa 2 se apaga sola (se recuperan hasta 3 recargas al volver de una pestaña oculta) |
+| Nodos visitados por tarea | 4000 (800 en submarcos, 1500 si el DOM pasa de 60 000 nodos; tope duro de 150 000 por recorrido como salvaguarda) |
+| Presupuesto total de CPU | 40 ms por página; al agotarse, pausa de 3 s y reanudación donde se cortó (el barrido siempre termina de cubrir el documento) |
 | Observador | uno solo, coalescido a 150 ms, lote máximo de 400 nodos |
 | Pausa | `visibilitychange` → desconexión total; 0 % de CPU en pestañas ocultas |
 | Memoria | colas acotadas, `Set` por lote, sin retención tras el teardown |

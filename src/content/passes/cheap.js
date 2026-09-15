@@ -16,14 +16,22 @@ import { MARK, hasMark, mark } from '../marks.js';
 const LIMITE_ATRIBUTO = 8000; // por encima, el atributo no es un estilo: es basura
 const RE_URL = /url\s*\(/i;
 const RE_GRADIENTE = /^(?:-\w+-)?(?:linear|radial|conic)-gradient\s*\(/i;
+/** Tamaño explícito en una declaración `background-size` suelta (no `auto`). */
+const RE_TAMANO_EXPLICITO = /(?:^|[\s,])(?:cover|contain|\d+(?:\.\d+)?(?:%|[a-z]+))/i;
 const UMBRAL_TEXTO_INVISIBLE = 0.09;
 const UMBRAL_FONDO_CLARO = 0.32;
 
-function analizarDeclaracion(propiedad, valor, el, engine) {
-  if (propiedad === 'background' || propiedad === 'background-image' || propiedad === 'background-color') {
+function analizarDeclaracion(propiedad, valor, el, engine, tieneUrl) {
+  if (propiedad === 'background' || propiedad === 'background-image' || propiedad === 'background-color' || propiedad === 'background-size') {
     if (engine === 'invert') {
       // Un fondo con foto sin rescate se vería en negativo.
-      if (!RE_URL.test(valor) || hasMark(el, MARK.MEDIA)) return false;
+      // Hay URL en esta declaración, o la hay en otra del mismo atributo junto
+      // con un tamaño explícito (p. ej. `background-image` + `background-size:
+      // cover` en declaraciones separadas). Re-invertir un sprite es inocuo:
+      // el icono recupera sus colores originales, que es justo lo que quería.
+      const conUrl = RE_URL.test(valor) ||
+        (tieneUrl && propiedad === 'background-size' && RE_TAMANO_EXPLICITO.test(valor));
+      if (!conUrl || hasMark(el, MARK.MEDIA)) return false;
       return mark(el, MARK.MEDIA);
     }
     if (hasMark(el, MARK.BG) || valor === 'transparent' || RE_URL.test(valor)) return false;
@@ -50,13 +58,14 @@ export function analizarEstiloInline(el, ctx) {
   if (!estilo || estilo.length > LIMITE_ATRIBUTO) return false;
 
   let corregido = false;
+  const tieneUrl = RE_URL.test(estilo); // la URL puede estar en otra declaración
   for (const declaracion of estilo.split(';')) {
     const corte = declaracion.indexOf(':');
     if (corte <= 0) continue;
     const propiedad = declaracion.slice(0, corte).trim().toLowerCase();
     const valor = declaracion.slice(corte + 1).trim();
     if (!valor || valor.startsWith('var(')) continue;
-    if (analizarDeclaracion(propiedad, valor, el, ctx.engine)) corregido = true;
+    if (analizarDeclaracion(propiedad, valor, el, ctx.engine, tieneUrl)) corregido = true;
   }
   return corregido;
 }

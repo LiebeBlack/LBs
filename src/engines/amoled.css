@@ -358,9 +358,10 @@ html[data-pbn-engine="amoled"]:not([data-pbn-off]) object {
 /* ---------------------------------------------------------------------------
    7. Extras opcionales.
    --------------------------------------------------------------------------- */
+/* Sin `picture`: el filtro sobre el contenedor formaría su propio grupo y se
+   aplicaría DOS veces al <img> hijo (imagen doblemente atenuada). */
 html[data-pbn-engine="amoled"][data-pbn-dimmedia]:not([data-pbn-off]) img,
-html[data-pbn-engine="amoled"][data-pbn-dimmedia]:not([data-pbn-off]) video,
-html[data-pbn-engine="amoled"][data-pbn-dimmedia]:not([data-pbn-off]) picture {
+html[data-pbn-engine="amoled"][data-pbn-dimmedia]:not([data-pbn-off]) video {
   filter: brightness(0.82) contrast(1.05) !important;
 }
 html[data-pbn-engine="amoled"][data-pbn-killanim]:not([data-pbn-off]) *,

@@ -38,7 +38,7 @@ function aInforme(texto) {
   } catch {
     return null;
   }
-  if (typeof datos !== 'object' || datos === null) return null;
+  if (typeof datos !== 'object' || datos === null || Array.isArray(datos)) return null;
 
   return {
     estado: 'ok',

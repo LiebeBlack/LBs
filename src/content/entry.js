@@ -25,10 +25,10 @@ import { batchPass, sweepPass } from './passes/smart.js';
 import { createRunner, logStats } from './scheduler.js';
 
 const CLAVE_CARGA = Symbol.for('pbn.loaded');
-const PRESUPUESTO_PRINCIPAL = 2000;
-const PRESUPUESTO_FRAME = 400;
-const DOM_GRANDE = 20000;
-const PRESUPUESTO_DOM_GRANDE = 800;
+const PRESUPUESTO_PRINCIPAL = 4000;
+const PRESUPUESTO_FRAME = 800;
+const DOM_GRANDE = 60000;
+const PRESUPUESTO_DOM_GRANDE = 1500;
 
 function yaCargado() {
   try {
@@ -69,11 +69,16 @@ function iniciar() {
   let activo = false;
   let engineAplicado = null;
   let medicionHecha = false;
+  /** Evita apilar varios barridos diferidos esperando el mismo DOMContentLoaded. */
+  let barridoDiferido = false;
 
   const runner = createRunner({
     sliceMs: 8,
     totalMs: 40,
-    refillsMax: 3,
+    // refill() solo se usa al volver de una pestaña oculta (reanudar): tope alto
+    // para que cada vuelta recupere presupuesto. El relevo tras un agotamiento
+    // es interno del gobernador y no consume recargas.
+    refillsMax: 8,
     onOverflow: () => encolarBarrido()
   });
 
@@ -103,8 +108,23 @@ function iniciar() {
 
   function encolarBarrido() {
     if (!activo || estado.eco) return;
+    // En document_start puede no existir <body> todavía: sin este relevo, la
+    // primera pasada de correcciones de páginas estáticas nunca llegaba a
+    // ejecutarse y quedaban textos oscuros sobre el negro.
+    if (!document.body) {
+      if (!barridoDiferido) {
+        barridoDiferido = true;
+        document.addEventListener('DOMContentLoaded', () => {
+          barridoDiferido = false;
+          encolarBarrido();
+        }, { once: true });
+      }
+      return;
+    }
     actualizarPresupuesto();
-    runner.enqueue(sweepPass(document.body ?? root, ctx));
+    // Si el gobernador agota su presupuesto a mitad de recorrido, conserva la
+    // tarea y la reanuda donde estaba (scheduler.js): el barrido siempre acaba
+    // cubriendo el documento, también en páginas enormes.    runner.enqueue(sweepPass(document.body, ctx));
   }
 
   function reportar() {
@@ -142,14 +162,21 @@ function iniciar() {
       if (antesActivo !== true) {
         runner.resume();
         encolarBarrido();
+      } else if (antesEngine !== null && antesEngine !== flags.engine) {
+        // Cambio de motor en vivo: las marcas antiguas se borran más abajo y el
+        // motor nuevo necesita su propio barrido (texto oscuro, iconos, fondos),
+        // si nada más muta la página quedaría a medias hasta la próxima
+        // mutación. El generador corre después de resetCorrections (idle).
+        encolarBarrido();
       }
     } else {
       runner.stop();
     }
 
-    // Cambiar de motor o apagar invalida las marcas: son específicas del motor
-    // y si no se borran quedarían aplicándose a un documento distinto.
-    if (!activo || (antesEngine !== null && antesEngine !== flags.engine)) {
+    // Cambiar de motor, apagar o entrar en modo eco invalida las marcas: son
+    // específicas del motor y si no se borran quedarían aplicándose a un
+    // documento distinto (y en eco la capa 2 debe quedar sin efecto real).
+    if (!activo || estado.eco || (antesEngine !== null && antesEngine !== flags.engine)) {
       resetCorrections(document);
     }
 
@@ -198,6 +225,12 @@ function iniciar() {
 
   function reanudar() {
     observer.start(root);
+    // Reaplicar atributos (el freeze pudo dejar `measuring`) y LUEGO barrir:
+    // el observer estuvo parado mientras la pestaña estuvo oculta, así que las
+    // mutaciones de ese periodo solo se descubren con un barrido explícito.
+    // (`pintar` solo barrre en la transición apagado→encendido: aquí la pestaña
+    // ya estaba activa y sin el barrido el contenido cambiado quedaría mal.)
+    aplicar();
     if (!runner.refill()) runner.resume();
     encolarBarrido();
   }
@@ -208,10 +241,31 @@ function iniciar() {
   };
 
   const alMostrar = (evento) => {
-    if (evento.persisted) reanudar();
+    if (!evento.persisted) return;
+    // bfcache: los listeners de mensajes se dieron de baja en pagehide.
+    dejarDeEscucharMensajes = onMessage(MSG.TAB_STATE, (mensaje) => {
+      tabOff = mensaje.off === true;
+      aplicar();
+      return undefined;
+    });
+    dejarDeResponderHost = onMessage(MSG.QUERY_HOST, () => ({
+      host: hostOf(location.href),
+      on: activo,
+      engine: ctx.engine
+    }));
+    reanudar();
   };
 
-  const dejarDeEscucharMensajes = onMessage(MSG.TAB_STATE, (mensaje) => {
+  const alOcultar = () => {
+    // pagehide NO implica destrucción (bfcache): se pausa y se dejan de escuchar
+    // mensajes, pero los listeners de visibilidad persisten para poder reanudar
+    // al volver. El de storage sigue activo a propósito (los ajustes cambian
+    // desde el popup aunque la pestaña esté oculta).
+    pausar();
+    quitarMensajes();
+  };
+
+  let dejarDeEscucharMensajes = onMessage(MSG.TAB_STATE, (mensaje) => {
     tabOff = mensaje.off === true;
     aplicar();
     return undefined;
@@ -219,11 +273,16 @@ function iniciar() {
 
   // El popup pregunta por el host real (así no necesita leer tab.url) y por el
   // estado que el motor tiene aplicado en este momento.
-  const dejarDeResponderHost = onMessage(MSG.QUERY_HOST, () => ({
+  let dejarDeResponderHost = onMessage(MSG.QUERY_HOST, () => ({
     host: hostOf(location.href),
     on: activo,
     engine: ctx.engine
   }));
+
+  function quitarMensajes() {
+    dejarDeEscucharMensajes();
+    dejarDeResponderHost();
+  }
 
   const dejarDeEscucharStorage = onStateChanged(() => {
     const modoPrevio = estado.mode;
@@ -240,18 +299,8 @@ function iniciar() {
     })();
   });
 
-  const alDescargar = () => {
-    pausar();
-    dejarDeEscucharMensajes();
-    dejarDeResponderHost();
-    dejarDeEscucharStorage();
-    document.removeEventListener('visibilitychange', alCambiarVisibilidad);
-    window.removeEventListener('pagehide', alDescargar);
-    window.removeEventListener('pageshow', alMostrar);
-  };
-
   document.addEventListener('visibilitychange', alCambiarVisibilidad);
-  window.addEventListener('pagehide', alDescargar);
+  window.addEventListener('pagehide', alOcultar);
   window.addEventListener('pageshow', alMostrar);
 
   /* -------------------------------------------------------------------------

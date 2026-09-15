@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pure Black Neon",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Negro #000000 puro en cualquier web: inversión con media intacta o modo AMOLED. Sin analizar el DOM.",
   "author": "Pure Black Neon",
   "icons": {

@@ -19,6 +19,11 @@ import { debug, mensajeDeError, warn } from '../shared/log.js';
 
 const MAX_COLA = 4;
 const TIMEOUT_IDLE = 600;
+/** Relevo tras agotar el presupuesto de la página: descansa y vuelve a intentarlo.
+ *  Antes la parada era permanente y los elementos que llegaban después (scroll
+ *  infinito, SPA, diálogos) quedaban para siempre sin corregir: texto oscuro
+ *  ilegible sobre negro y bloques claros intactos. */
+const RELLENO_MS = 3000;
 
 export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOverflow } = {}) {
   const cola = [];
@@ -29,7 +34,12 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
   let activo = true;
   let colaDesbordada = false;
   let hechoTotal = 0;
+  /** Ejecución en vivo: un relevo programado no debe sobrescribir nada. */
+  let enMarcha = false;
+  /** Hubo trabajo rechazado durante una pausa: el relevo lanza un barrido extra. */
+  let trabajoPerdido = false;
 
+  let relevoId = null;
   const programarIdle = (callback) => {
     if (typeof requestIdleCallback === 'function') {
       return requestIdleCallback(callback, { timeout: TIMEOUT_IDLE });
@@ -43,12 +53,34 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
     else clearTimeout(id);
   };
 
+  /** Programa la reanudación tras un agotamiento (descarta si hay una en vuelo). */
+  function programarRelevo() {
+    if (relevoId !== null || enMarcha) return;
+    relevoId = setTimeout(() => {
+      relevoId = null;
+      gastado = 0;
+      refills = 0;
+      activo = true;
+      if (trabajoPerdido) {
+        trabajoPerdido = false;
+        // Barrido de recuperación: lo llegado durante la pausa se cubre con un
+        // barrido nuevo. Puede solaparse con la tarea reanudada, pero es
+        // idempotente (hasMark), va en tiempo muerto y está acotado por
+        // presupuesto; perder correcciones sería peor que repetir lecturas.
+        if (typeof onOverflow === 'function') onOverflow();
+      }
+      bombea();
+    }, RELLENO_MS);
+  }
+
   function bombea() {
     if (idleId !== null || !activo) return;
     if (!enCurso && cola.length === 0) return;
 
+    enMarcha = true;
     idleId = programarIdle(() => {
       idleId = null;
+      enMarcha = false;
       const inicio = performance.now();
       // Los dos cortes (rebanada de 8 ms y presupuesto de 40 ms) son saltos
       // explícitos: el reloj y `gastado` son estado del gobernador, no de la
@@ -77,10 +109,11 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
       gastado += performance.now() - inicio;
 
       if (agotado || gastado >= totalMs) {
-        warn(`presupuesto de corrección agotado (${Math.round(gastado)} ms): se deja de analizar esta página`);
-        activo = false; // parada dura: se recupera con refill() tras volver de una pestaña oculta
-        enCurso = null;
-        cola.length = 0;
+        warn(`presupuesto de corrección agotado (${Math.round(gastado)} ms): pausa de ${RELLENO_MS} ms`);
+        activo = false; // pausa: un relevo temporizado recupera el presupuesto
+        // Se conserva TODO (la tarea en curso Y la cola): el relevo retoma el
+        // trabajo en el mismo orden, sin perder lotes de mutaciones encolados.
+        programarRelevo();
         return;
       }
       if (enCurso || cola.length > 0) {
@@ -88,6 +121,7 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
         return;
       }
       if (colaDesbordada) {
+        refills = 0; // el barrido de relevo vuelve a tener recargas disponibles
         colaDesbordada = false;
         if (typeof onOverflow === 'function') onOverflow();
       }
@@ -95,8 +129,12 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
   }
 
   function enqueue(tarea) {
-    if (!activo || !tarea || typeof tarea.next !== 'function') return false;
-    if (gastado >= totalMs) return false;
+    if (!activo || gastado >= totalMs) {
+      // Sin presupuesto ahora: avisar para que el relevo recupere este trabajo.
+      trabajoPerdido = true;
+      return false;
+    }
+    if (!tarea || typeof tarea.next !== 'function') return false;
     if (cola.length >= MAX_COLA) {
       colaDesbordada = true;
       return false;
@@ -110,8 +148,14 @@ export function createRunner({ sliceMs = 8, totalMs = 40, refillsMax = 3, onOver
     activo = false;
     cancelarIdle(idleId);
     idleId = null;
+    if (relevoId !== null) {
+      clearTimeout(relevoId);
+      relevoId = null;
+    }
     enCurso = null;
     cola.length = 0;
+    trabajoPerdido = false;
+    enMarcha = false; // el idle en vuelo fue cancelado: sin este reset, un relevo futuro se bloquearía
   }
 
   function resume() {

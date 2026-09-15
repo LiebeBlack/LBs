@@ -116,6 +116,10 @@ function render() {
   }
   if (refs.tabFix) refs.tabFix.hidden = !tabOff;
 
+  // El tooltip vive en el render: si solo se ajusta al arrancar, se queda con
+  // el valor anterior cuando el host se resuelve (o cambia) después.
+  if (refs.host) refs.host.title = nombreHost();
+
   document.body.classList.toggle('disabled', !sitioActivo);
 }
 
@@ -271,6 +275,3 @@ onStateChanged(() => {
     }
   })();
 });
-
-// El nombre del host solo se muestra si existe; el resto de la UI ya está viva.
-if (refs.host) refs.host.title = nombreHost();

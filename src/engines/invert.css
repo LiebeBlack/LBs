@@ -57,15 +57,20 @@ html:not([data-pbn-off]):not([data-pbn-engine="amoled"])::before {
    [data-pbn-media] lo escribe la Capa 2 cuando descubre un fondo con foto
    (background-image) que sin rescate quedaría en negativo.
    --------------------------------------------------------------------------- */
+/* `<picture>` NUNCA se re-invierte: es un contenedor transparente y un filtro
+   en él formaría su propio grupo de composición, cancelando en cadena la
+   re-inversión del <img> hijo (resultado: la foto volvía al negativo).
+   Los gradientes inline tampoco se re-invierten por presencia del atributo
+   `style`: casi siempre son botones/bloques de color deliberado y aquí se
+   verían como bloques claros; el rescate lo decide la Capa 2 con
+   [data-pbn-media] solo cuando el fondo es una foto con tamaño real. */
 html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(
     img,
-    picture,
     video,
     canvas,
     iframe,
     embed,
     object,
-    [style*="background-image"],
     [data-pbn-media]
   ):not([data-pbn-filterreset]) {
   filter: hue-rotate(180deg) invert(100%) !important;
@@ -75,13 +80,11 @@ html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(
    dos cadenas G se cancelaría entre sí y la imagen volvería al negativo. */
 html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) [data-pbn-media] :is(
     img,
-    picture,
     video,
     canvas,
     iframe,
     embed,
     object,
-    [style*="background-image"],
     [data-pbn-media]
   ) {
   filter: none !important;
@@ -222,7 +225,7 @@ html:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(
    cadena de re-inversión para que el resultado neto sea exactamente
    contrast/brightness sobre la imagen original.
    --------------------------------------------------------------------------- */
-html[data-pbn-dimmedia]:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(img, video, picture) {
+html[data-pbn-dimmedia]:not([data-pbn-off]):not([data-pbn-engine="amoled"]) :is(img, video) {
   filter: brightness(0.82) contrast(1.05) hue-rotate(180deg) invert(100%) !important;
 }
 html[data-pbn-killanim]:not([data-pbn-off]):not([data-pbn-engine="amoled"]) *,

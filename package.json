@@ -1,6 +1,6 @@
 {
   "name": "pure-black-neon",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "private": true,
   "description": "Tema oscuro AMOLED e inversión con preservación de media para Firefox (WebExtensions MV3).",
   "type": "module",

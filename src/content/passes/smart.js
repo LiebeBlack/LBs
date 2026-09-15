@@ -89,7 +89,7 @@ function* recorrer(root, ctx) {
   // reanudando el avance igual que antes.
   for (let el = walker.nextNode(); el !== null; el = walker.nextNode()) {
     ctx.presupuesto.visitados += 1;
-    if (ctx.presupuesto.visitados > ctx.presupuesto.max) return;
+    if (ctx.presupuesto.visitados > MAX_POR_RECORRIDO) return; // salvaguarda
 
     yield; // punto de cesión: aquí corta y reanuda el gobernador
 
@@ -105,6 +105,14 @@ function* recorrer(root, ctx) {
     }
   }
 }
+
+/**
+ * Tope absoluto por recorrido, solo como salvaguarda contra un bucle imposible:
+ * el corte operativo lo hace el gobernador por tiempo, y como el generador se
+ * CONSERVA entre pausas, el barrido se reanuda exactamente donde se quedó (un
+ * TreeWalker nuevo siempre empezaría de cero y no avanzaría nunca).
+ */
+const MAX_POR_RECORRIDO = 150000;
 
 /** Barrido completo del documento (una tarea acotada por presupuesto). */
 export function* sweepPass(root, ctx) {
