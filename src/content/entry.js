@@ -124,7 +124,8 @@ function iniciar() {
     actualizarPresupuesto();
     // Si el gobernador agota su presupuesto a mitad de recorrido, conserva la
     // tarea y la reanuda donde estaba (scheduler.js): el barrido siempre acaba
-    // cubriendo el documento, también en páginas enormes.    runner.enqueue(sweepPass(document.body, ctx));
+    // cubriendo el documento, también en páginas enormes.
+    runner.enqueue(sweepPass(document.body, ctx));
   }
 
   function reportar() {
@@ -284,7 +285,9 @@ function iniciar() {
     dejarDeResponderHost();
   }
 
-  const dejarDeEscucharStorage = onStateChanged(() => {
+  // Persiste a propósito (nunca se da de baja): los ajustes pueden cambiar
+  // desde el popup incluso con la pestaña oculta o en bfcache.
+  onStateChanged(() => {
     const modoPrevio = estado.mode;
     void (async () => {
       try {
