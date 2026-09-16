@@ -90,7 +90,7 @@ function iniciar() {
         encolarBarrido();
         return;
       }
-      ctx.presupuesto.visitados = 0;
+      actualizarPresupuesto(); // los lotes también respetan el tope por tamaño de DOM
       runner.enqueue(batchPass(nodes, ctx));
     }
   });

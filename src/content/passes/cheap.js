@@ -11,7 +11,7 @@
    ============================================================================ */
 
 import { luminance, toRgb } from '../../shared/color.js';
-import { MARK, hasMark, mark } from '../marks.js';
+import { MARK, hasMark, mark, unmark } from '../marks.js';
 
 const LIMITE_ATRIBUTO = 8000; // por encima, el atributo no es un estilo: es basura
 const RE_URL = /url\s*\(/i;
@@ -23,18 +23,25 @@ const UMBRAL_FONDO_CLARO = 0.32;
 
 function analizarDeclaracion(propiedad, valor, el, engine, tieneUrl) {
   if (propiedad === 'background' || propiedad === 'background-image' || propiedad === 'background-color' || propiedad === 'background-size') {
-    if (engine === 'invert') {
-      // Un fondo con foto sin rescate se vería en negativo.
-      // Hay URL en esta declaración, o la hay en otra del mismo atributo junto
-      // con un tamaño explícito (p. ej. `background-image` + `background-size:
-      // cover` en declaraciones separadas). Re-invertir un sprite es inocuo:
-      // el icono recupera sus colores originales, que es justo lo que quería.
-      const conUrl = RE_URL.test(valor) ||
-        (tieneUrl && propiedad === 'background-size' && RE_TAMANO_EXPLICITO.test(valor));
-      if (!conUrl || hasMark(el, MARK.MEDIA)) return false;
-      return mark(el, MARK.MEDIA);
+    // Un fondo con foto sin rescate se vería en negativo (invert) o desaparecería
+    // aplastado a negro (amoled). Hay URL en esta declaración, o la hay en otra
+    // del mismo atributo junto con un tamaño explícito (p. ej. `background-image`
+    // + `background-size: cover` en declaraciones separadas). Re-invertir un
+    // sprite es inocuo: el icono recupera sus colores originales.
+    const conUrl = RE_URL.test(valor) ||
+      (tieneUrl && propiedad === 'background-size' && RE_TAMANO_EXPLICITO.test(valor));
+    if (conUrl) {
+      // La foto manda, sea cual sea el orden de las declaraciones: si el mismo
+      // atributo ya marcó un bloque claro, esa marca se retira (un elemento con
+      // foto no es un bloque de texto plano).
+      if (!hasMark(el, MARK.MEDIA)) {
+        unmark(el, MARK.BG);
+        return mark(el, MARK.MEDIA); // ambos motores preservan la foto
+      }
+      return false;
     }
-    if (hasMark(el, MARK.BG) || valor === 'transparent' || RE_URL.test(valor)) return false;
+    if (engine === 'invert') return false; // [data-pbn-bg] solo pinta en AMOLED
+    if (hasMark(el, MARK.BG) || hasMark(el, MARK.MEDIA) || valor === 'transparent' || RE_URL.test(valor)) return false;
     if (RE_GRADIENTE.test(valor)) return mark(el, MARK.BG);
     const fondo = toRgb(valor);
     if (fondo && fondo.a >= 0.35 && luminance(fondo) > UMBRAL_FONDO_CLARO) return mark(el, MARK.BG);

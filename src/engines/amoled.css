@@ -51,6 +51,7 @@ html[data-pbn-engine="amoled"]:not([data-pbn-off])[data-pbn-accent="magenta"] {
    --------------------------------------------------------------------------- */
 html[data-pbn-engine="amoled"][data-pbn-strict]:not([data-pbn-off]) :where(
     :not(img):not(video):not(iframe):not(canvas):not(svg):not(picture):not(source):not(embed):not(object):not(track):not(audio):not(input):not(textarea):not(select):not(button):not(option):not(progress):not(meter)
+    :not([data-pbn-media])
   ) {
   background-color: #000000 !important;
   background-image: none !important;

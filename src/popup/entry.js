@@ -43,7 +43,10 @@ const refs = {
   engineHint: $('engine-hint'),
   shortcut: $('shortcut'),
   version: $('version'),
-  openOptions: $('open-options')
+  openOptions: $('open-options'),
+  excludedSection: $('excluded-section'),
+  excludedList: $('excluded-list'),
+  excludedEmpty: $('excluded-empty')
 };
 
 const PISTAS_MOTOR = {
@@ -123,6 +126,34 @@ function render() {
   if (refs.host) refs.host.title = nombreHost();
 
   document.body.classList.toggle('disabled', !sitioActivo);
+
+  renderExcluidos();
+}
+
+/* Solo la página de opciones muestra la lista completa de sitios excluidos;
+   en el popup no cabe y su gestión fina no le corresponde. */
+function renderExcluidos() {
+  const enOpciones = location.pathname.endsWith('options.html');
+  if (refs.excludedSection) refs.excludedSection.hidden = !enOpciones;
+  if (!enOpciones || !refs.excludedList) return;
+
+  const sitios = Object.keys(estado.excluded).sort((a, b) => a.localeCompare(b));
+  refs.excludedList.replaceChildren(
+    ...sitios.map((sitio) => {
+      const fila = document.createElement('li');
+      const nombre = document.createElement('span');
+      nombre.textContent = sitio;
+      nombre.title = sitio;
+      const quitar = document.createElement('button');
+      quitar.type = 'button';
+      quitar.textContent = 'Quitar';
+      quitar.dataset.sitio = sitio;
+      quitar.setAttribute('aria-label', `Dejar de excluir ${sitio}`);
+      fila.append(nombre, quitar);
+      return fila;
+    })
+  );
+  if (refs.excludedEmpty) refs.excludedEmpty.hidden = sitios.length > 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -228,6 +259,16 @@ function conectarAcciones() {
   });
 
   if (refs.shortcut) refs.shortcut.textContent = `Atajo: ${ATAJO}`;
+
+  // Quitar un sitio de la lista de excluidos (delegación: la lista se recrea
+  // entera en cada render, un listener en el contenedor basta).
+  refs.excludedList?.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-sitio]');
+    if (!boton) return;
+    delete estado.excluded[boton.dataset.sitio];
+    render();
+    void guardar();
+  });
 
   // Chip de versión: se lee del manifest para no poder desincronizarse jamás.
   if (refs.version) refs.version.textContent = `v${browser.runtime.getManifest().version}`;

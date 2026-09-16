@@ -15,7 +15,7 @@
    ============================================================================ */
 
 import { chroma, luminance, luminanceOverBlack, toRgb } from '../../shared/color.js';
-import { MARK, hasMark, mark } from '../marks.js';
+import { MARK, hasMark, mark, unmark } from '../marks.js';
 import { isMediaTag } from './media.js';
 
 const NS_SVG = 'http://www.w3.org/2000/svg';
@@ -25,10 +25,17 @@ const UMBRAL_CROMA_NEUTRO = 10;
 const UMBRAL_SOMBRA_CLARA = 0.5;
 /** Primera pieza de un box-shadow: su color (o su longitud, que descartamos). */
 const RE_INICIO_SOMBRA = /^(?:[a-z-]+\([^)]*\)|#[0-9a-f]{3,8}|\w+)/i;
+const RE_URL_FONDO = /url\(/i;
+
+/** Color computado del último análisis de cada nodo: `estaHeredado` lo consulta
+ *  en lugar de volver a llamar a getComputedStyle sobre el padre (1 lectura/nodo). */
+const COLOR_DEL_NODO = new WeakMap();
 
 function estaHeredado(el, colorComputado) {
   const padre = el.parentElement;
   if (!padre) return false;
+  const delPadre = COLOR_DEL_NODO.get(padre);
+  if (delPadre !== undefined) return delPadre === colorComputado;
   try {
     return getComputedStyle(padre).color === colorComputado;
   } catch {
@@ -39,6 +46,7 @@ function estaHeredado(el, colorComputado) {
 export function checkAmoledPass(el, leerEstilos) {
   const estilos = leerEstilos();
   if (!estilos) return false;
+  COLOR_DEL_NODO.set(el, String(estilos.color));
 
   const esSvgRaiz = el.namespaceURI === NS_SVG && el.tagName === 'svg';
   if (!esSvgRaiz && isMediaTag(el)) return false; // la media nunca se toca
@@ -57,14 +65,27 @@ export function checkAmoledPass(el, leerEstilos) {
   }
 
   /* --- Texto con gradiente recortado al texto: sobre negro sería invisible. */
+  const imagenFondo = String(estilos.backgroundImage ?? 'none');
   if (!hasMark(el, MARK.GRAD)) {
-    const imagenFondo = String(estilos.backgroundImage ?? 'none');
     const recorta = String(estilos.backgroundClip ?? '').toLowerCase();
     if (imagenFondo !== 'none' && recorta.includes('text')) corregido = mark(el, MARK.GRAD) || corregido;
   }
 
-  /* --- Bloque claro: se lleva a negro puro. */
-  if (!hasMark(el, MARK.BG)) {
+  /* --- Fondo con foto (héroe, banner, tarjeta con imagen): en AMOLED también
+         es media y se preserva; sin marca, el CSS lo aplastaría a negro y el
+         elemento desaparecería. El tamaño explícito descarta patrones diminutos. */
+  if (!hasMark(el, MARK.MEDIA) && imagenFondo !== 'none' && RE_URL_FONDO.test(imagenFondo)) {
+    const tamano = String(estilos.backgroundSize ?? 'auto');
+    if (tamano !== 'auto') {
+      // La foto manda: retira un [data-pbn-bg] previo del mismo elemento.
+      unmark(el, MARK.BG);
+      corregido = mark(el, MARK.MEDIA) || corregido;
+    }
+  }
+
+  /* --- Bloque claro: se lleva a negro puro (nunca sobre una foto: la regla
+         [data-pbn-bg] hace background-image:none y borraría la imagen). */
+  if (!hasMark(el, MARK.BG) && !hasMark(el, MARK.MEDIA)) {
     const fondo = toRgb(estilos.backgroundColor);
     if (fondo && fondo.a >= 0.35 && luminance(fondo) > UMBRAL_FONDO_CLARO) {
       corregido = mark(el, MARK.BG) || corregido;
